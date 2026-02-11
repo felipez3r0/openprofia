@@ -2,6 +2,7 @@ import type { ISettingsMap, SettingsKey } from '@openprofia/core';
 import db from '../db/connection.js';
 import { defaultConfig } from '../config/env.js';
 import { logger } from '../utils/logger.js';
+import type { SettingsRow } from '../db/types.js';
 
 const DEFAULTS: Required<ISettingsMap> = {
   ollama_base_url: defaultConfig.OLLAMA_BASE_URL,
@@ -21,10 +22,9 @@ export class SettingsService {
   }
 
   private loadFromDb(): void {
-    const rows = db.prepare('SELECT key, value FROM settings').all() as Array<{
-      key: string;
-      value: string;
-    }>;
+    const rows = db
+      .prepare('SELECT key, value FROM settings')
+      .all() as SettingsRow[];
     for (const row of rows) {
       this.cache.set(row.key, row.value);
     }

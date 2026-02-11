@@ -6,6 +6,20 @@ import { defaultConfig } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 
 /**
+ * Resultado bruto de busca vetorial do LanceDB
+ */
+interface LanceSearchResult {
+  _distance: number;
+  id: string;
+  skillId: string;
+  documentId: string;
+  content: string;
+  embedding: Float32Array;
+  metadata: string | Record<string, unknown>;
+  createdAt: string;
+}
+
+/**
  * Busca semântica no LanceDB
  * Retorna os top-k chunks mais relevantes para a query
  */
@@ -28,21 +42,23 @@ export async function searchChunks(
 
     // Busca vetorial com distância cosseno (adequada para embeddings de texto)
     const queryVector = Array.from(embedding);
-    const results = await table
+    const rawResults = await table
       .search(queryVector)
       .metricType(MetricType.Cosine)
       .limit(limit)
       .execute();
 
+    const results = rawResults as unknown as LanceSearchResult[];
+
     // Filtra por threshold de similaridade
     // Para cosseno: _distance = 1 - cosine_similarity (0 = idêntico, 2 = oposto)
     const filtered = results
-      .filter((result: any) => {
+      .filter((result) => {
         const score = 1 - result._distance;
         logger.debug({ distance: result._distance, score }, 'RAG result score');
         return score >= threshold;
       })
-      .map((result: any) => ({
+      .map((result) => ({
         chunk: {
           id: result.id,
           skillId: result.skillId,
@@ -70,8 +86,8 @@ export async function searchChunks(
     );
 
     return filtered;
-  } catch (error: any) {
-    if (error.message?.includes('does not exist')) {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message?.includes('does not exist')) {
       logger.warn({ skillId }, 'No knowledge base found for skill');
       return [];
     }

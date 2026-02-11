@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import type { JobStatus } from '@openprofia/core';
 import { documentService } from '../../services/document.service.js';
 import {
   uploadResponseSchema,
@@ -81,7 +82,7 @@ const documentsRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    async (request, reply) => {
+    async (request, _reply) => {
       const job = documentService.getJobStatus(request.params.jobId);
       return job;
     },
@@ -120,10 +121,10 @@ const documentsRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    async (request, reply) => {
+    async (request, _reply) => {
       const jobs = documentService.listJobs(
         request.params.skillId,
-        request.query.status as any,
+        request.query.status as JobStatus | undefined,
       );
       return jobs;
     },

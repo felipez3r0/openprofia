@@ -50,6 +50,7 @@ export function useChatStream() {
             appendStreamingContent(chunk.content);
           } else if (chunk.type === 'done') {
             commitStreamingMessage();
+            return;
           } else if (chunk.type === 'error') {
             setStreaming(false);
             setStreamingContent('');
@@ -58,9 +59,11 @@ export function useChatStream() {
               content: `Erro: ${chunk.error ?? 'Falha desconhecida'}`,
               timestamp: new Date().toISOString(),
             });
+            return;
           }
         }
 
+        // Fallback: se o stream terminou sem evento 'done'
         commitStreamingMessage();
       } catch (error) {
         if ((error as Error).name !== 'AbortError') {

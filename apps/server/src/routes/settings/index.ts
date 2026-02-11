@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import S from 'fluent-json-schema';
+import { S } from 'fluent-json-schema';
 import { settingsService } from '../../services/settings.service.js';
 import { ollamaService } from '../../services/ollama.service.js';
 import { logger } from '../../utils/logger.js';

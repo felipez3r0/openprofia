@@ -81,7 +81,7 @@ export async function buildApp(
   );
 
   // Root route
-  app.get('/', async (request, reply) => {
+  app.get('/', async (_request, _reply) => {
     return {
       name: 'OpenProfIA API',
       version: '0.1.0',

@@ -72,5 +72,5 @@ class DatabaseConnection {
   }
 }
 
-export const db = DatabaseConnection.get();
+export const db: Database.Database = DatabaseConnection.get();
 export default db;

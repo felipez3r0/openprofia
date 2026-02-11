@@ -1,11 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { IChatRequest } from '@openprofia/core';
 import { chatService } from '../../services/chat.service.js';
-import {
-  chatRequestSchema,
-  chatResponseSchema,
-  chatStreamEventSchema,
-} from './schema.js';
+import { chatRequestSchema, chatResponseSchema } from './schema.js';
 
 /**
  * Chat routes
@@ -26,7 +22,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    async (request, reply) => {
+    async (request, _reply) => {
       const response = await chatService.chat(request.body);
       return response;
     },
@@ -75,10 +71,12 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
 
         // Envia evento de conclusão
         reply.raw.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Envia erro
+        const message =
+          error instanceof Error ? error.message : 'Unknown error';
         reply.raw.write(
-          `data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`,
+          `data: ${JSON.stringify({ type: 'error', error: message })}\n\n`,
         );
       } finally {
         reply.raw.end();

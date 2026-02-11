@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import S from 'fluent-json-schema';
+import { S } from 'fluent-json-schema';
 import { ollamaService } from '../../services/ollama.service.js';
 
 const healthResponseSchema = S.object()
@@ -34,7 +34,7 @@ const healthRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    async (request, reply) => {
+    async (_request, _reply) => {
       return { status: 'ok', timestamp: new Date().toISOString() };
     },
   );
@@ -51,7 +51,7 @@ const healthRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    async (request, reply) => {
+    async (_request, _reply) => {
       const ollamaHealthy = await ollamaService.healthCheck();
 
       return {

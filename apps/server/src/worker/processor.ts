@@ -187,12 +187,10 @@ export class DocumentProcessor {
         },
         'Job completed successfully',
       );
-    } catch (error: any) {
-      logger.error(
-        { jobId: job.id, error: error.message },
-        'Job processing failed',
-      );
-      failJob(job.id, error.message || 'Unknown error');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error({ jobId: job.id, error: message }, 'Job processing failed');
+      failJob(job.id, message);
     }
   }
 }

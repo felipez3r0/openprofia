@@ -27,7 +27,7 @@ const skillsRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    async (request, reply) => {
+    async (_request, _reply) => {
       const skills = skillService.listSkills();
       return skills;
     },

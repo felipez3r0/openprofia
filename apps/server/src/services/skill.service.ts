@@ -9,6 +9,7 @@ import {
   readdirSync,
   readFileSync,
   statSync,
+  renameSync,
 } from 'node:fs';
 import { defaultConfig } from '../config/env.js';
 import { logger } from '../utils/logger.js';
@@ -19,6 +20,7 @@ import {
 } from '../utils/errors.js';
 import db from '../db/connection.js';
 import { deleteChunksTable } from '../db/lance.js';
+import type { SkillRow } from '../db/types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,11 +45,11 @@ export class SkillService {
    */
   listSkills(): ISkill[] {
     const stmt = db.prepare('SELECT * FROM skills ORDER BY installed_at DESC');
-    const rows = stmt.all();
+    const rows = stmt.all() as SkillRow[];
 
-    return rows.map((row: any) => ({
+    return rows.map((row) => ({
       id: row.id,
-      manifest: JSON.parse(row.manifest),
+      manifest: JSON.parse(row.manifest) as ISkillManifest,
       installedAt: row.installed_at,
       path: row.path,
       hasKnowledge: Boolean(row.has_knowledge),
@@ -59,7 +61,7 @@ export class SkillService {
    */
   getSkill(skillId: string): ISkill | null {
     const stmt = db.prepare('SELECT * FROM skills WHERE id = ?');
-    const row = stmt.get(skillId);
+    const row = stmt.get(skillId) as SkillRow | undefined;
 
     if (!row) {
       return null;
@@ -67,7 +69,7 @@ export class SkillService {
 
     return {
       id: row.id,
-      manifest: JSON.parse(row.manifest),
+      manifest: JSON.parse(row.manifest) as ISkillManifest,
       installedAt: row.installed_at,
       path: row.path,
       hasKnowledge: Boolean(row.has_knowledge),
@@ -77,7 +79,7 @@ export class SkillService {
   /**
    * Instala uma nova skill a partir de um arquivo .zip
    */
-  async installSkill(zipBuffer: Buffer, filename: string): Promise<ISkill> {
+  async installSkill(zipBuffer: Buffer, _filename: string): Promise<ISkill> {
     const tempDir = path.join(this.skillsPath, '.temp', Date.now().toString());
 
     try {
@@ -92,12 +94,14 @@ export class SkillService {
         throw new ValidationError('manifest.json not found in skill package');
       }
 
-      const manifest: ISkillManifest = JSON.parse(
-        require('fs').readFileSync(manifestPath, 'utf-8'),
-      );
+      const rawManifest = JSON.parse(
+        readFileSync(manifestPath, 'utf-8'),
+      ) as Record<string, unknown>;
 
       // Valida campos obrigatórios
-      this.validateManifest(manifest);
+      this.validateManifest(rawManifest);
+
+      const manifest = rawManifest as unknown as ISkillManifest;
 
       // Valida segurança: nenhum arquivo executável
       this.validateNoExecutables(tempDir);
@@ -112,7 +116,7 @@ export class SkillService {
       if (existsSync(finalPath)) {
         rmSync(finalPath, { recursive: true });
       }
-      require('fs').renameSync(tempDir, finalPath);
+      renameSync(tempDir, finalPath);
 
       // Verifica se tem diretório knowledge
       const hasKnowledge = existsSync(path.join(finalPath, 'knowledge'));
@@ -187,7 +191,7 @@ export class SkillService {
   /**
    * Valida o manifest da skill
    */
-  private validateManifest(manifest: any): void {
+  private validateManifest(manifest: Record<string, unknown>): void {
     const required = ['id', 'name', 'version', 'description', 'capabilities'];
 
     for (const field of required) {
@@ -199,7 +203,8 @@ export class SkillService {
     }
 
     // Valida formato do ID (alfanumérico, hífens, underscores)
-    if (!/^[a-zA-Z0-9_-]+$/.test(manifest.id)) {
+    const id = manifest.id;
+    if (typeof id !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(id)) {
       throw new ValidationError(
         'Skill ID must contain only alphanumeric characters, hyphens, and underscores',
       );

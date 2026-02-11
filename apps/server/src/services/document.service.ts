@@ -1,7 +1,7 @@
-import type {
-  IJob,
-  IUploadDocumentResponse,
+import {
   JobStatus,
+  type IJob,
+  type IUploadDocumentResponse,
 } from '@openprofia/core';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
@@ -12,6 +12,7 @@ import { logger } from '../utils/logger.js';
 import { NotFoundError } from '../utils/errors.js';
 import db from '../db/connection.js';
 import { enqueueJob } from '../worker/queue.js';
+import type { JobRow } from '../db/types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,7 +57,7 @@ export class DocumentService {
       skillId,
       filePath,
       fileName: sanitizedFilename,
-      status: 'pending' as JobStatus,
+      status: JobStatus.PENDING,
       progress: 0,
     };
 
@@ -74,7 +75,7 @@ export class DocumentService {
 
     return {
       jobId,
-      status: 'pending' as JobStatus,
+      status: JobStatus.PENDING,
     };
   }
 
@@ -83,7 +84,7 @@ export class DocumentService {
    */
   getJobStatus(jobId: string): IJob {
     const stmt = db.prepare('SELECT * FROM jobs WHERE id = ?');
-    const row = stmt.get(jobId);
+    const row = stmt.get(jobId) as JobRow | undefined;
 
     if (!row) {
       throw new NotFoundError('Job', jobId);
@@ -95,12 +96,12 @@ export class DocumentService {
       filePath: row.file_path,
       fileName: row.file_name,
       status: row.status as JobStatus,
-      error: row.error,
+      error: row.error ?? undefined,
       progress: row.progress,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      startedAt: row.started_at,
-      completedAt: row.completed_at,
+      startedAt: row.started_at ?? undefined,
+      completedAt: row.completed_at ?? undefined,
     };
   }
 
@@ -109,7 +110,7 @@ export class DocumentService {
    */
   listJobs(skillId: string, status?: JobStatus): IJob[] {
     let query = 'SELECT * FROM jobs WHERE skill_id = ?';
-    const params: any[] = [skillId];
+    const params: string[] = [skillId];
 
     if (status) {
       query += ' AND status = ?';
@@ -119,20 +120,20 @@ export class DocumentService {
     query += ' ORDER BY created_at DESC';
 
     const stmt = db.prepare(query);
-    const rows = stmt.all(...params);
+    const rows = stmt.all(...params) as JobRow[];
 
-    return rows.map((row: any) => ({
+    return rows.map((row) => ({
       id: row.id,
       skillId: row.skill_id,
       filePath: row.file_path,
       fileName: row.file_name,
       status: row.status as JobStatus,
-      error: row.error,
+      error: row.error ?? undefined,
       progress: row.progress,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      startedAt: row.started_at,
-      completedAt: row.completed_at,
+      startedAt: row.started_at ?? undefined,
+      completedAt: row.completed_at ?? undefined,
     }));
   }
 

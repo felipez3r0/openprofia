@@ -37,7 +37,7 @@ export async function generateEmbedding(
       throw new Error(`Ollama API error: ${response.status} - ${error}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as { embedding?: number[] };
 
     if (!data.embedding || !Array.isArray(data.embedding)) {
       throw new Error('Invalid embedding response from Ollama');

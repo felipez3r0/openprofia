@@ -2,6 +2,7 @@ import type {
   IChatRequest,
   IChatResponse,
   IChatMessage,
+  ISkillManifest,
 } from '@openprofia/core';
 import { ollamaService } from './ollama.service.js';
 import { settingsService } from './settings.service.js';
@@ -11,8 +12,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defaultConfig } from '../config/env.js';
 import { logger } from '../utils/logger.js';
-import { NotFoundError, ValidationError } from '../utils/errors.js';
+import { NotFoundError } from '../utils/errors.js';
 import db from '../db/connection.js';
+import type { SkillRow } from '../db/types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -216,9 +218,19 @@ export class ChatService {
   /**
    * Obtém informações de uma skill do banco
    */
-  private getSkill(skillId: string): any {
+  private getSkill(
+    skillId: string,
+  ): {
+    id: string;
+    name: string;
+    version: string;
+    manifest: ISkillManifest;
+    path: string;
+    hasKnowledge: boolean;
+    installedAt: string;
+  } | null {
     const stmt = db.prepare('SELECT * FROM skills WHERE id = ?');
-    const skill = stmt.get(skillId);
+    const skill = stmt.get(skillId) as SkillRow | undefined;
 
     if (!skill) {
       return null;
@@ -228,7 +240,7 @@ export class ChatService {
       id: skill.id,
       name: skill.name,
       version: skill.version,
-      manifest: JSON.parse(skill.manifest),
+      manifest: JSON.parse(skill.manifest) as ISkillManifest,
       path: skill.path,
       hasKnowledge: Boolean(skill.has_knowledge),
       installedAt: skill.installed_at,

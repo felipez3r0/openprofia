@@ -74,7 +74,7 @@ export class OllamaService {
         throw new Error(`Ollama API error: ${response.status} - ${error}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as OllamaChatResponse;
 
       logger.debug(
         { model: request.model, messagesCount: request.messages.length },
@@ -191,8 +191,10 @@ export class OllamaService {
         throw new Error(`Failed to list models: ${response.status}`);
       }
 
-      const data = await response.json();
-      return data.models?.map((m: { name: string }) => m.name) || [];
+      const data = (await response.json()) as {
+        models?: Array<{ name: string }>;
+      };
+      return data.models?.map((m) => m.name) || [];
     } catch (error) {
       logger.error({ error, targetUrl }, 'Failed to list Ollama models');
       throw new ExternalServiceError(

@@ -1,6 +1,7 @@
 import type { IJob } from '@openprofia/core';
 import db from '../db/connection.js';
 import { logger } from '../utils/logger.js';
+import type { JobRow, QueueStatsRow } from '../db/types.js';
 
 /**
  * Adiciona um job na fila (SQLite)
@@ -45,7 +46,7 @@ export function dequeueJob(): IJob | null {
   `);
 
   const transaction = db.transaction(() => {
-    const row = getStmt.get();
+    const row = getStmt.get() as JobRow | undefined;
 
     if (!row) {
       return null;
@@ -62,7 +63,7 @@ export function dequeueJob(): IJob | null {
       progress: row.progress,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      startedAt: row.started_at,
+      startedAt: row.started_at ?? undefined,
     } as IJob;
   });
 
@@ -135,7 +136,7 @@ export function getQueueStats(): Record<string, number> {
     GROUP BY status
   `);
 
-  const rows = stmt.all();
+  const rows = stmt.all() as QueueStatsRow[];
   const stats: Record<string, number> = {
     pending: 0,
     processing: 0,
@@ -143,7 +144,7 @@ export function getQueueStats(): Record<string, number> {
     failed: 0,
   };
 
-  for (const row of rows as any[]) {
+  for (const row of rows) {
     stats[row.status] = row.count;
   }
 
