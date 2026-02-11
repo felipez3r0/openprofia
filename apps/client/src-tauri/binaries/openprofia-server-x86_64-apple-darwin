@@ -3,6 +3,15 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUNDLE_DIR="$SCRIPT_DIR/server-bundle"
 
+# Define NODE_PATH para encontrar os módulos nativos
+export NODE_PATH="$BUNDLE_DIR/node_modules"
+
+# Define NODE_ENV como production para desabilitar pino-pretty
+export NODE_ENV="production"
+
+# Define SIDECAR_MODE para desabilitar Swagger
+export SIDECAR_MODE="1"
+
 # Usa o node do PATH (para desenvolvimento)
 # Em produção, apontaria para um node runtime embarcado
-exec node "$BUNDLE_DIR/server.mjs" "$@"
+exec node "$BUNDLE_DIR/server.js" "$@"

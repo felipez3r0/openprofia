@@ -8,7 +8,8 @@
 import { build } from 'esbuild';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { copyFileSync, mkdirSync, existsSync } from 'node:fs';
+import { copyFileSync, mkdirSync, existsSync, writeFileSync, cpSync, chmodSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,15 +34,21 @@ await build({
   bundle: true,
   platform: 'node',
   target: 'node22',
-  format: 'esm',
-  outfile: join(bundleDir, 'server.mjs'),
+  format: 'cjs',
+  outfile: join(bundleDir, 'server.js'),
   external: [
     'better-sqlite3',
     'vectordb',
-    'pino-pretty',
-    '@fastify/*',
+    'pino-pretty', // Evita worker threads
     'fsevents', // macOS only, pode ser problemático em bundle
   ],
+  define: {
+    // Em CJS, __filename e __dirname já existem, então podemos mapear import.meta.url
+    'import.meta.url': '__filenameUrl',
+  },
+  banner: {
+    js: `const { pathToFileURL } = require('url'); const __filenameUrl = pathToFileURL(__filename).href;`,
+  },
   logLevel: 'info',
   minify: false, // Facilita debug
   sourcemap: true,
@@ -49,24 +56,59 @@ await build({
 
 console.log('✅ Server code bundled');
 
-// 2. Copia dependências nativas
-console.log('📦 Copying native dependencies...');
+// 2. Cria package.json mínimo para instalar deps via pnpm
+console.log('📦 Installing native dependencies...');
 
-const nativeModulesDir = join(rootDir, 'node_modules');
+// Lê as versões do package.json do server
+const serverPackageJson = JSON.parse(
+  await import('node:fs/promises').then(fs => 
+    fs.readFile(join(rootDir, 'apps/server/package.json'), 'utf-8')
+  )
+);
 
-// Nota: Em produção, precisaríamos copiar os binários .node prebuilt
-// Por enquanto, vamos apenas criar uma nota sobre isso
-const nativeDepsNote = `
-# Native Dependencies
+// Cria package.json com apenas as deps nativas necessárias
+const bundlePackageJson = {
+  name: 'openprofia-server-bundle',
+  version: '0.1.0',
+  private: true,
+  dependencies: {
+    'better-sqlite3': serverPackageJson.dependencies['better-sqlite3'],
+    'vectordb': serverPackageJson.dependencies['vectordb'],
+  }
+};
 
-Os módulos nativos (better-sqlite3, vectordb) precisam ser copiados manualmente:
-- better-sqlite3: node_modules/better-sqlite3/build/Release/better_sqlite3.node
-- vectordb: node_modules/vectordb/native (binários complexos)
+writeFileSync(
+  join(bundleDir, 'package.json'),
+  JSON.stringify(bundlePackageJson, null, 2)
+);
 
-Para build de produção, esses binários devem ser compilados para cada plataforma-alvo.
-`;
+// Instala as dependências no bundle usando npm (para evitar conflito com workspace pnpm)
+try {
+  console.log('  Installing via npm...');
+  execSync('npm install --omit=dev', {
+    cwd: bundleDir,
+    stdio: 'inherit',
+  });
+  console.log('✅ Native dependencies installed');
+} catch (err) {
+  console.error('❌ Failed to install dependencies:', err.message);
+  process.exit(1);
+}
 
-// 3. Copia skills built-in
+// 3. Copia arquivos de migrations do banco de dados
+console.log('📄 Copying database migrations...');
+
+const migrationsSourceDir = join(rootDir, 'apps/server/src/db/migrations');
+const migrationsBundleDir = join(bundleDir, 'migrations');
+
+if (existsSync(migrationsSourceDir)) {
+  cpSync(migrationsSourceDir, migrationsBundleDir, { recursive: true });
+  console.log('✅ Migrations copied');
+} else {
+  console.warn('⚠️  Migrations directory not found');
+}
+
+// 4. Copia skills built-in
 console.log('📚 Copying built-in skills...');
 
 const skillsSourceDir = join(rootDir, 'packages/skills');
@@ -109,14 +151,21 @@ const macWrapperScript = `#!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUNDLE_DIR="$SCRIPT_DIR/server-bundle"
 
+# Define NODE_PATH para encontrar os módulos nativos
+export NODE_PATH="$BUNDLE_DIR/node_modules"
+
+# Define NODE_ENV como production para desabilitar pino-pretty
+export NODE_ENV="production"
+
+# Define SIDECAR_MODE para desabilitar Swagger
+export SIDECAR_MODE="1"
+
 # Usa o node do PATH (para desenvolvimento)
 # Em produção, apontaria para um node runtime embarcado
-exec node "$BUNDLE_DIR/server.mjs" "$@"
+exec node "$BUNDLE_DIR/server.js" "$@"
 `;
 
 // Escreve o wrapper (por enquanto apenas macOS)
-import { writeFileSync, chmodSync } from 'node:fs';
-
 const macWrapperPath = join(binariesDir, 'openprofia-server-aarch64-apple-darwin');
 writeFileSync(macWrapperPath, macWrapperScript);
 chmodSync(macWrapperPath, 0o755);

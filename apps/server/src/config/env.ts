@@ -72,21 +72,33 @@ export const defaultConfig: EnvConfig = {
  */
 export function getFastifyOptions(): FastifyServerOptions {
   const isDev = defaultConfig.NODE_ENV === 'development';
+  // Verifica se está em modo sidecar (SIDECAR_MODE=1)
+  const isSidecar = process.env.SIDECAR_MODE === '1';
 
+  // Em sidecar mode, usa logger simples (sem pino-pretty que usa worker threads)
+  if (isSidecar) {
+    return {
+      logger: { level: isDev ? 'debug' : 'info' },
+      bodyLimit: defaultConfig.MAX_FILE_SIZE_MB * 1024 * 1024,
+      trustProxy: true,
+    };
+  }
+
+  // Modo normal (não-sidecar)
   return {
-    logger: {
-      level: isDev ? 'debug' : 'info',
-      transport: isDev
-        ? {
+    logger: isDev
+      ? {
+          level: 'debug',
+          transport: {
             target: 'pino-pretty',
             options: {
               translateTime: 'HH:MM:ss Z',
               ignore: 'pid,hostname',
               colorize: true,
             },
-          }
-        : undefined,
-    },
+          },
+        }
+      : { level: 'info' },
     bodyLimit: defaultConfig.MAX_FILE_SIZE_MB * 1024 * 1024,
     trustProxy: true,
   };

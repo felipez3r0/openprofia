@@ -2,6 +2,12 @@ import fp from 'fastify-plugin';
 import type { FastifyPluginAsync } from 'fastify';
 
 const swaggerPlugin: FastifyPluginAsync = async (fastify) => {
+  // Desativa Swagger em modo sidecar (evita erro com static files)
+  if (process.env.SIDECAR_MODE === '1') {
+    fastify.log.info('Swagger disabled in sidecar mode');
+    return;
+  }
+
   // Swagger para documentação automática da API
   await fastify.register(import('@fastify/swagger'), {
     openapi: {
