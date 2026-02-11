@@ -57,6 +57,7 @@ export class ChatService {
       systemPrompt,
       contextChunks,
       messages,
+      skill.manifest.fewShotMessages,
     );
 
     // Chama Ollama
@@ -134,6 +135,7 @@ export class ChatService {
       systemPrompt,
       contextChunks,
       messages,
+      skill.manifest.fewShotMessages,
     );
 
     const model =
@@ -167,6 +169,7 @@ export class ChatService {
     systemPrompt: string,
     contextChunks: string[],
     userMessages: IChatMessage[],
+    fewShotMessages?: Array<{ role: 'user' | 'assistant'; content: string }>,
   ): IChatMessage[] {
     const messages: IChatMessage[] = [];
 
@@ -186,6 +189,23 @@ export class ChatService {
       role: 'system',
       content: systemContent,
     });
+
+    // Injeta few-shot examples apenas na primeira interação do usuário
+    const userMessageCount = userMessages.filter(
+      (m) => m.role === 'user',
+    ).length;
+    if (
+      fewShotMessages &&
+      fewShotMessages.length > 0 &&
+      userMessageCount <= 1
+    ) {
+      for (const msg of fewShotMessages) {
+        messages.push({
+          role: msg.role,
+          content: msg.content,
+        });
+      }
+    }
 
     // Adiciona mensagens do usuário
     messages.push(...userMessages);
@@ -218,9 +238,7 @@ export class ChatService {
   /**
    * Obtém informações de uma skill do banco
    */
-  private getSkill(
-    skillId: string,
-  ): {
+  private getSkill(skillId: string): {
     id: string;
     name: string;
     version: string;

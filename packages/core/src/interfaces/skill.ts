@@ -13,6 +13,10 @@ export interface ISkillManifest {
     chat?: string;
     embedding?: string;
   };
+  fewShotMessages?: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+  }>;
 }
 
 /**
