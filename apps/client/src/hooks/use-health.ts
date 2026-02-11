@@ -28,9 +28,9 @@ export function useHealth() {
       const data = await healthApi.detailed();
       setState({
         connected: true,
-        ollama: data.services.ollama.status,
-        database: data.services.database.status,
-        lancedb: data.services.lancedb.status,
+        ollama: data.services.ollama,
+        database: data.services.database,
+        lancedb: data.services.lancedb,
         isChecking: false,
       });
     } catch {

@@ -23,7 +23,12 @@ export class ApiClient {
       }));
       return { success: false, error: error.message };
     }
-    return response.json() as Promise<IApiResponse<T>>;
+    const body = await response.json();
+    // Support both wrapped { success, data } and raw responses
+    if (body && typeof body === 'object' && 'success' in body) {
+      return body as IApiResponse<T>;
+    }
+    return { success: true, data: body as T };
   }
 
   async get<T>(path: string): Promise<IApiResponse<T>> {

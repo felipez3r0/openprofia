@@ -2,7 +2,14 @@ import type { ISkill, ISkillManifest } from '@openprofia/core';
 import AdmZip from 'adm-zip';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { existsSync, mkdirSync, rmSync, readdirSync, statSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  rmSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+} from 'node:fs';
 import { defaultConfig } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import {
@@ -25,7 +32,7 @@ export class SkillService {
   constructor() {
     this.skillsPath = path.resolve(
       __dirname,
-      '../../../..',
+      '../..',
       defaultConfig.SKILLS_PATH,
     );
     this.ensureSkillsDirectory();
@@ -241,6 +248,58 @@ export class SkillService {
     };
 
     walkDir(dir);
+  }
+
+  /**
+   * Registra no banco skills que existem no disco mas ainda não foram registradas.
+   * Usado no startup para garantir que skills built-in estejam sempre disponíveis.
+   */
+  seedDefaultSkills(): void {
+    if (!existsSync(this.skillsPath)) return;
+
+    const entries = readdirSync(this.skillsPath);
+
+    for (const entry of entries) {
+      if (entry.startsWith('.')) continue;
+
+      const skillDir = path.join(this.skillsPath, entry);
+      if (!statSync(skillDir).isDirectory()) continue;
+
+      const manifestPath = path.join(skillDir, 'manifest.json');
+      if (!existsSync(manifestPath)) continue;
+
+      try {
+        const manifest: ISkillManifest = JSON.parse(
+          readFileSync(manifestPath, 'utf-8'),
+        );
+
+        // Pula se já registrada no banco
+        if (this.getSkill(manifest.id)) continue;
+
+        const hasKnowledge = existsSync(path.join(skillDir, 'knowledge'));
+
+        const stmt = db.prepare(`
+          INSERT OR IGNORE INTO skills (id, name, version, manifest, path, has_knowledge, installed_at)
+          VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+        `);
+
+        stmt.run(
+          manifest.id,
+          manifest.name,
+          manifest.version,
+          JSON.stringify(manifest),
+          skillDir,
+          hasKnowledge ? 1 : 0,
+        );
+
+        logger.info(
+          { skillId: manifest.id, name: manifest.name },
+          'Default skill seeded',
+        );
+      } catch (error) {
+        logger.warn({ entry, error }, 'Failed to seed skill from disk');
+      }
+    }
   }
 
   /**

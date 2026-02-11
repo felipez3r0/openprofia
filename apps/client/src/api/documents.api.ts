@@ -8,8 +8,8 @@ export function createDocumentsApi(client: ApiClient) {
       file: File,
     ): Promise<IUploadDocumentResponse> {
       const formData = new FormData();
-      formData.append('file', file);
       formData.append('skillId', skillId);
+      formData.append('file', file);
       const response = await client.postFormData<IUploadDocumentResponse>(
         '/documents/upload',
         formData,

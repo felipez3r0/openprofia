@@ -38,15 +38,16 @@ const documentsRoutes: FastifyPluginAsync = async (fastify) => {
         return reply.code(400).send({ error: 'No file uploaded' });
       }
 
+      // Lê o buffer primeiro para garantir que todos os fields do multipart sejam parseados
+      const buffer = await data.toBuffer();
+
       // Extrai skillId dos fields do multipart
-      const skillId = (data.fields as any)?.skillId?.value;
+      const skillId = (data.fields as Record<string, { value: string }>)
+        ?.skillId?.value;
 
       if (!skillId) {
         return reply.code(400).send({ error: 'skillId is required' });
       }
-
-      // Lê o buffer do arquivo
-      const buffer = await data.toBuffer();
 
       // Cria o job
       const result = await documentService.uploadDocument(

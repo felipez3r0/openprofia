@@ -7,9 +7,9 @@ interface HealthStatus {
 
 interface DetailedHealthStatus extends HealthStatus {
   services: {
-    ollama: { status: string; error?: string };
-    database: { status: string; error?: string };
-    lancedb: { status: string; error?: string };
+    ollama: string;
+    database: string;
+    lancedb: string;
   };
 }
 

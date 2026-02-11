@@ -194,7 +194,7 @@ export class ChatService {
   private loadSystemPrompt(skillId: string): string {
     const skillsPath = path.resolve(
       __dirname,
-      '../../../..',
+      '../..',
       defaultConfig.SKILLS_PATH,
     );
     const promptPath = path.join(skillsPath, skillId, 'prompt.md');

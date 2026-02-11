@@ -1,6 +1,7 @@
 import { buildApp } from './app.js';
 import { getFastifyOptions, defaultConfig } from './config/env.js';
 import { documentProcessor } from './worker/processor.js';
+import { skillService } from './services/skill.service.js';
 import db from './db/connection.js';
 
 /**
@@ -10,6 +11,9 @@ async function start() {
   const app = await buildApp(getFastifyOptions());
 
   try {
+    // Registra skills built-in que existem no disco
+    skillService.seedDefaultSkills();
+
     // Inicia o servidor HTTP
     await app.listen({
       port: defaultConfig.PORT,

@@ -25,7 +25,7 @@ class DatabaseConnection {
     // Garante que o diretório storage existe
     const storagePath = path.resolve(
       __dirname,
-      '../../../..',
+      '../..',
       defaultConfig.STORAGE_PATH,
     );
     if (!existsSync(storagePath)) {

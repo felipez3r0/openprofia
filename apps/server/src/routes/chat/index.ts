@@ -52,6 +52,14 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
+      // Transfere headers já definidos pelo Fastify (inclui CORS) para reply.raw
+      const headers = reply.getHeaders();
+      for (const [key, value] of Object.entries(headers)) {
+        if (value !== undefined) {
+          reply.raw.setHeader(key, value as string);
+        }
+      }
+
       // Configura headers para SSE
       reply.raw.setHeader('Content-Type', 'text/event-stream');
       reply.raw.setHeader('Cache-Control', 'no-cache');

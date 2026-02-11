@@ -25,7 +25,7 @@ export class DocumentService {
   constructor() {
     const storagePath = path.resolve(
       __dirname,
-      '../../../..',
+      '../..',
       defaultConfig.STORAGE_PATH,
     );
     this.uploadsPath = path.join(storagePath, 'uploads');

@@ -8,9 +8,10 @@ import {
 import { extractText } from '../rag/extractor.js';
 import { chunkText } from '../rag/chunker.js';
 import { generateEmbeddings } from '../rag/embedder.js';
-import { createChunksTable, getChunksTable } from '../db/lance.js';
+import { createChunksTable, getChunksTable, makeChunksArrowTable } from '../db/lance.js';
 import { defaultConfig } from '../config/env.js';
 import { logger } from '../utils/logger.js';
+import db from '../db/connection.js';
 
 /**
  * Worker de processamento de documentos em background
@@ -138,20 +139,20 @@ export class DocumentProcessor {
         documentId: job.id,
         content: chunk.content,
         embedding: embeddings[i].embedding,
-        metadata: {
+        metadata: JSON.stringify({
           source: job.fileName,
           chunkIndex: chunk.index,
           totalChunks: chunks.length,
           startChar: chunk.metadata.startChar,
           endChar: chunk.metadata.endChar,
-        },
+        }),
         createdAt: now,
       }));
 
       // Tenta adicionar à tabela existente ou cria uma nova
       try {
         const table = await getChunksTable(job.skillId);
-        await table.add(data);
+        await table.add(makeChunksArrowTable(data));
         logger.debug(
           { jobId: job.id, table: table.name },
           'Added to existing table',
@@ -165,7 +166,13 @@ export class DocumentProcessor {
         );
       }
 
-      // 5. Marca como concluído
+      // 5. Atualiza has_knowledge da skill
+      const updateSkillStmt = db.prepare(
+        'UPDATE skills SET has_knowledge = 1 WHERE id = ?',
+      );
+      updateSkillStmt.run(job.skillId);
+
+      // 6. Marca como concluído
       completeJob(job.id, 100);
 
       logger.info(

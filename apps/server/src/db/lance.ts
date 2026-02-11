@@ -1,4 +1,5 @@
-import { connect } from 'vectordb';
+import { connect, makeArrowTable } from 'vectordb';
+import { VectorColumnOptions } from 'vectordb/dist/arrow.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { existsSync, mkdirSync } from 'node:fs';
@@ -26,7 +27,7 @@ class LanceDBConnection {
     // Garante que o diretório vectors existe
     const storagePath = path.resolve(
       __dirname,
-      '../../../..',
+      '../..',
       defaultConfig.STORAGE_PATH,
     );
     const vectorsPath = path.join(storagePath, 'vectors');
@@ -61,25 +62,40 @@ export async function getChunksTable(skillId: string): Promise<Table> {
   }
 }
 
+interface ChunkRecord {
+  id: string;
+  skillId: string;
+  documentId: string;
+  content: string;
+  embedding: number[];
+  metadata: string;
+  createdAt: string;
+}
+
+/**
+ * Converte dados de chunks para Arrow Table com schema correto (FixedSizeList<Float32>)
+ */
+export function makeChunksArrowTable(data: ChunkRecord[]): ReturnType<typeof makeArrowTable> {
+  return makeArrowTable(data, {
+    vectorColumns: {
+      embedding: new VectorColumnOptions(),
+    },
+  });
+}
+
 /**
  * Cria uma tabela de chunks para uma skill
  */
 export async function createChunksTable(
   skillId: string,
-  initialData: Array<{
-    id: string;
-    skillId: string;
-    documentId: string;
-    content: string;
-    embedding: number[];
-    metadata: Record<string, unknown>;
-    createdAt: string;
-  }>,
+  initialData: ChunkRecord[],
 ): Promise<Table> {
   const db = await LanceDBConnection.get();
   const tableName = `chunks_${skillId.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
-  const table = await db.createTable(tableName, initialData);
+  const arrowTable = makeChunksArrowTable(initialData);
+
+  const table = await db.createTable(tableName, arrowTable);
   logger.info({ tableName, rows: initialData.length }, 'Created LanceDB table');
 
   return table;

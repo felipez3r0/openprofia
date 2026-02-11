@@ -1,9 +1,9 @@
 import type { ISearchParams, ISearchResult } from '@openprofia/core';
+import { MetricType } from 'vectordb';
 import { getChunksTable } from '../db/lance.js';
 import { generateEmbedding } from './embedder.js';
 import { defaultConfig } from '../config/env.js';
 import { logger } from '../utils/logger.js';
-import { NotFoundError } from '../utils/errors.js';
 
 /**
  * Busca semântica no LanceDB
@@ -16,7 +16,7 @@ export async function searchChunks(
     skillId,
     query,
     limit = defaultConfig.MAX_CONTEXT_CHUNKS,
-    threshold = 0.7,
+    threshold = 0.3,
   } = params;
 
   try {
@@ -26,15 +26,20 @@ export async function searchChunks(
     // Obtém a tabela de chunks da skill
     const table = await getChunksTable(skillId);
 
-    // Busca vetorial
-    const results = await table.search(embedding).limit(limit).execute();
+    // Busca vetorial com distância cosseno (adequada para embeddings de texto)
+    const queryVector = Array.from(embedding);
+    const results = await table
+      .search(queryVector)
+      .metricType(MetricType.Cosine)
+      .limit(limit)
+      .execute();
 
     // Filtra por threshold de similaridade
+    // Para cosseno: _distance = 1 - cosine_similarity (0 = idêntico, 2 = oposto)
     const filtered = results
       .filter((result: any) => {
-        // LanceDB retorna _distance (menor é melhor)
-        // Convertemos para score (maior é melhor)
-        const score = 1 / (1 + result._distance);
+        const score = 1 - result._distance;
+        logger.debug({ distance: result._distance, score }, 'RAG result score');
         return score >= threshold;
       })
       .map((result: any) => ({
@@ -43,11 +48,14 @@ export async function searchChunks(
           skillId: result.skillId,
           documentId: result.documentId,
           content: result.content,
-          embedding: result.embedding,
-          metadata: result.metadata,
+          embedding: Array.from(result.embedding as Float32Array),
+          metadata:
+            typeof result.metadata === 'string'
+              ? JSON.parse(result.metadata)
+              : result.metadata,
           createdAt: result.createdAt,
         },
-        score: 1 / (1 + result._distance),
+        score: 1 - result._distance,
         distance: result._distance,
       }));
 

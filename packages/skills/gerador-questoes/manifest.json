@@ -1,0 +1,13 @@
+{
+  "id": "gerador-questoes",
+  "name": "Gerador de Questões",
+  "version": "1.0.0",
+  "description": "Gera questões de múltipla escolha para provas e avaliações escolares, com gabarito e justificativa pedagógica.",
+  "author": "OpenProfIA",
+  "capabilities": ["assessment", "multiple-choice", "quiz"],
+  "tools": [],
+  "modelPreferences": {
+    "chat": "gemma2:2b",
+    "embedding": "nomic-embed-text"
+  }
+}
