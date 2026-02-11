@@ -49,7 +49,7 @@ export class DocumentProcessor {
   /**
    * Para o worker
    */
-  stop(): void {
+  async stop(): Promise<void> {
     if (!this.isRunning) {
       return;
     }
@@ -60,6 +60,24 @@ export class DocumentProcessor {
     }
 
     this.isRunning = false;
+
+    // Aguarda job corrente finalizar (max 5s)
+    if (this.processing) {
+      logger.info('Waiting for current job to finish...');
+      const startWait = Date.now();
+      const maxWait = 5000; // 5s timeout
+
+      while (this.processing && Date.now() - startWait < maxWait) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
+      if (this.processing) {
+        logger.warn('Job did not finish in time, forcing shutdown');
+      } else {
+        logger.info('Current job finished gracefully');
+      }
+    }
+
     logger.info('Document processor stopped');
   }
 

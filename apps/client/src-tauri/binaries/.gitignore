@@ -1,0 +1,5 @@
+# Tauri sidecar binaries - generated
+server-bundle/
+
+# Keep wrapper scripts (checked in)
+!openprofia-server-*

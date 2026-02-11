@@ -2,12 +2,15 @@
   "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-config-schema/schema.json",
   "productName": "OpenProfIA",
   "version": "0.1.0",
-  "identifier": "com.openprofia.app",
+  "identifier": "com.openprofia.desktop",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
     "beforeDevCommand": "pnpm dev",
     "beforeBuildCommand": "pnpm build"
+  },
+  "bundle": {
+    "externalBin": ["binaries/openprofia-server"]
   },
   "app": {
     "windows": [
@@ -25,6 +28,8 @@
     }
   },
   "plugins": {
-    "dialog": {}
+    "shell": {
+      "open": true
+    }
   }
 }

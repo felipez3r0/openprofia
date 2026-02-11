@@ -1,0 +1,8 @@
+#!/bin/bash
+# OpenProfIA Server Sidecar Wrapper (macOS)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BUNDLE_DIR="$SCRIPT_DIR/server-bundle"
+
+# Usa o node do PATH (para desenvolvimento)
+# Em produção, apontaria para um node runtime embarcado
+exec node "$BUNDLE_DIR/server.mjs" "$@"

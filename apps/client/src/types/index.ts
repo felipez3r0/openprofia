@@ -23,4 +23,10 @@ export type {
 
 export { JobStatus } from '@openprofia/core';
 
-export type ConnectionMode = 'local' | 'remote';
+/**
+ * Modo de conexão do client
+ * - 'embedded': Server sidecar gerenciado pelo app (recomendado)
+ * - 'local': Server local externo em localhost:3000
+ * - 'remote': Server remoto (URL customizada)
+ */
+export type ConnectionMode = 'embedded' | 'local' | 'remote';

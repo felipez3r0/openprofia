@@ -25,13 +25,24 @@ async function start() {
     // Inicia o servidor HTTP
     await app.listen({
       port: defaultConfig.PORT,
-      host: '0.0.0.0',
+      host: defaultConfig.HOST,
     });
 
-    app.log.info(`🚀 Server listening on port ${defaultConfig.PORT}`);
+    // Log especial para sidecar detectar que o server está pronto
+    if (defaultConfig.SIDECAR_MODE) {
+      console.log(`OPENPROFIA_SERVER_READY:${defaultConfig.PORT}`);
+    }
+
+    app.log.info(
+      `🚀 Server listening on ${defaultConfig.HOST}:${defaultConfig.PORT}`,
+    );
     app.log.info(
       `📚 API documentation: http://localhost:${defaultConfig.PORT}/docs`,
     );
+
+    if (defaultConfig.SIDECAR_MODE) {
+      app.log.info('🔒 Running in sidecar mode (localhost only)');
+    }
 
     // Inicia o worker de background
     documentProcessor.start();
@@ -47,8 +58,8 @@ async function start() {
     process.on(signal, async () => {
       app.log.info(`${signal} received, shutting down gracefully...`);
 
-      // Para o worker
-      documentProcessor.stop();
+      // Para o worker (aguarda job corrente)
+      await documentProcessor.stop();
 
       // Fecha o servidor
       await app.close();

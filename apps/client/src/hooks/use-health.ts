@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useApi } from '@/providers/connection-provider';
+import { useConnectionStore } from '@/stores/connection.store';
 import { HEALTH_POLL_INTERVAL_MS } from '@/config/constants';
 
 interface HealthState {
@@ -19,7 +20,8 @@ const initialState: HealthState = {
 };
 
 export function useHealth() {
-  const { healthApi } = useApi();
+  const { healthApi, sidecarStatus } = useApi();
+  const mode = useConnectionStore((s) => s.mode);
   const [state, setState] = useState<HealthState>(initialState);
 
   const check = useCallback(async () => {
@@ -46,9 +48,16 @@ export function useHealth() {
 
   useEffect(() => {
     check();
-    const interval = setInterval(check, HEALTH_POLL_INTERVAL_MS);
+
+    // Usa polling mais rápido (1s) quando sidecar está starting
+    const pollInterval =
+      mode === 'embedded' && sidecarStatus === 'starting'
+        ? 1000
+        : HEALTH_POLL_INTERVAL_MS;
+
+    const interval = setInterval(check, pollInterval);
     return () => clearInterval(interval);
-  }, [check]);
+  }, [check, mode, sidecarStatus]);
 
   return { ...state, refresh: check };
 }

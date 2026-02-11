@@ -7,6 +7,8 @@ import { createDocumentsApi, type DocumentsApi } from '@/api/documents.api';
 import { createHealthApi, type HealthApi } from '@/api/health.api';
 import { createSettingsApi, type SettingsApi } from '@/api/settings.api';
 import { useConnectionStore } from '@/stores/connection.store';
+import { useSidecar } from '@/hooks/use-sidecar';
+import type { SidecarStatus } from '@/stores/connection.store';
 
 interface ApiContextValue {
   client: ApiClient;
@@ -15,12 +17,17 @@ interface ApiContextValue {
   documentsApi: DocumentsApi;
   healthApi: HealthApi;
   settingsApi: SettingsApi;
+  sidecarStatus: SidecarStatus;
+  isTauri: boolean;
 }
 
 const ApiContext = createContext<ApiContextValue | null>(null);
 
 export function ConnectionProvider({ children }: { children: ReactNode }) {
   const baseUrl = useConnectionStore((s) => s.baseUrl);
+
+  // Gerencia sidecar lifecycle automaticamente baseado no modo
+  const { sidecarStatus, isTauri } = useSidecar();
 
   const apis = useMemo(() => {
     const client = new ApiClient(baseUrl);
@@ -31,8 +38,10 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
       documentsApi: createDocumentsApi(client),
       healthApi: createHealthApi(client),
       settingsApi: createSettingsApi(client),
+      sidecarStatus,
+      isTauri,
     };
-  }, [baseUrl]);
+  }, [baseUrl, sidecarStatus, isTauri]);
 
   return <ApiContext.Provider value={apis}>{children}</ApiContext.Provider>;
 }

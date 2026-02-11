@@ -18,21 +18,42 @@ export interface EnvConfig {
   CHUNK_OVERLAP: number;
   MAX_CONTEXT_CHUNKS: number;
   MAX_FILE_SIZE_MB: number;
+  SIDECAR_MODE: boolean;
+  HOST: string;
+}
+
+/**
+ * Detecta se está rodando em modo sidecar
+ */
+const isSidecarMode = process.env.SIDECAR_MODE === '1';
+
+/**
+ * Obtém o diretório de dados (OPENPROFIA_DATA_DIR em sidecar, relativo caso contrário)
+ */
+function getDataPath(defaultRelative: string): string {
+  if (isSidecarMode && process.env.OPENPROFIA_DATA_DIR) {
+    return process.env.OPENPROFIA_DATA_DIR;
+  }
+  return process.env.STORAGE_PATH || defaultRelative;
 }
 
 /**
  * Configuração padrão do servidor
  */
 export const defaultConfig: EnvConfig = {
-  PORT: 3000,
+  PORT: parseInt(process.env.PORT || '3000', 10),
   NODE_ENV: process.env.NODE_ENV || 'development',
   OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
   OLLAMA_EMBEDDING_MODEL:
     process.env.OLLAMA_EMBEDDING_MODEL || 'nomic-embed-text',
   OLLAMA_CHAT_MODEL: process.env.OLLAMA_CHAT_MODEL || 'gemma2:2b',
   JWT_SECRET: process.env.JWT_SECRET,
-  STORAGE_PATH: process.env.STORAGE_PATH || '../../packages/storage',
-  SKILLS_PATH: process.env.SKILLS_PATH || '../../packages/skills',
+  STORAGE_PATH: getDataPath('../../packages/storage'),
+  SKILLS_PATH:
+    process.env.SKILLS_PATH ||
+    (isSidecarMode && process.env.OPENPROFIA_DATA_DIR
+      ? `${process.env.OPENPROFIA_DATA_DIR}/skills`
+      : '../../packages/skills'),
   WORKER_POLL_INTERVAL_MS: parseInt(
     process.env.WORKER_POLL_INTERVAL_MS || '5000',
     10,
@@ -42,6 +63,8 @@ export const defaultConfig: EnvConfig = {
   CHUNK_OVERLAP: parseInt(process.env.CHUNK_OVERLAP || '50', 10),
   MAX_CONTEXT_CHUNKS: parseInt(process.env.MAX_CONTEXT_CHUNKS || '5', 10),
   MAX_FILE_SIZE_MB: parseInt(process.env.MAX_FILE_SIZE_MB || '50', 10),
+  SIDECAR_MODE: isSidecarMode,
+  HOST: isSidecarMode ? '127.0.0.1' : '0.0.0.0',
 };
 
 /**

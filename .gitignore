@@ -54,3 +54,9 @@ Thumbs.db
 
 #Uploads
 packages/storage/uploads/
+
+# Tauri sidecar binaries - generated
+apps/client/src-tauri/target/
+apps/client/src-tauri/binaries/server-bundle/
+apps/client/src-tauri/binaries/*.sh
+apps/client/src-tauri/binaries/*.bat
