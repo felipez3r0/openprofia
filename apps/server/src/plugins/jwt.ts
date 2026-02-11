@@ -1,3 +1,4 @@
+import fp from 'fastify-plugin';
 import type { FastifyPluginAsync } from 'fastify';
 import { defaultConfig } from '../config/env.js';
 
@@ -14,4 +15,4 @@ const jwtPlugin: FastifyPluginAsync = async (fastify) => {
   }
 };
 
-export default jwtPlugin;
+export default fp(jwtPlugin);

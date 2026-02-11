@@ -11,7 +11,7 @@ OpenProfIA democratiza o acesso à IA para professores através de uma plataform
 Monorepo composto por:
 
 - **`apps/server`** - API Fastify + RAG + Worker de background
-- **`apps/client`** - Desktop app (Tauri + React) _(a ser implementado)_
+- **`apps/client`** - Desktop app (Tauri v2 + React + Tailwind + Shadcn/UI)
 - **`packages/core`** - Tipos e interfaces compartilhadas (TypeScript)
 - **`packages/storage`** - Dados persistentes (SQLite + LanceDB)
 - **`packages/skills`** - Skills instaladas (pacotes .zip declarativos)
@@ -23,6 +23,7 @@ Monorepo composto por:
 - Node.js >= 22 LTS
 - pnpm >= 9
 - Ollama instalado e rodando (`http://localhost:11434`)
+- Rust toolchain (para build do Client Tauri) — [rustup.rs](https://rustup.rs)
 
 ### Instalação
 
@@ -37,7 +38,7 @@ pnpm install
 # Copia .env de exemplo
 cp .env.example .env
 
-# Inicia o servidor em modo dev
+# Inicia server + client em modo dev
 pnpm dev
 ```
 
@@ -78,10 +79,41 @@ pnpm clean
 ### Estrutura de Scripts
 
 - `pnpm --filter @openprofia/server dev` - Roda apenas o server
+- `pnpm --filter @openprofia/client dev` - Roda apenas o client (Vite dev server na porta 1420)
+- `pnpm --filter @openprofia/client tauri dev` - Roda o client dentro da janela Tauri nativa
 - `pnpm --filter @openprofia/core build` - Compila apenas o core
 - `turbo dev` - Roda todos os workspaces em modo dev
 
-## 🔌 API Endpoints
+## �️ Client Desktop
+
+O client é uma aplicação desktop construída com **Tauri v2** (Rust + Webview nativo) e **React 19**.
+
+### Tech Stack
+
+- **Shell:** Tauri v2 (janela nativa, titlebar customizada)
+- **UI:** React 19 + TypeScript + Tailwind CSS + Shadcn/UI (tema New York)
+- **Routing:** @tanstack/react-router (type-safe)
+- **Estado:** Zustand (stores para conexão, skills, chat)
+- **Chat:** Streaming SSE via fetch + ReadableStream
+
+### Páginas
+
+| Rota         | Descrição                                                |
+| ------------ | -------------------------------------------------------- |
+| `/chat`      | Interface de chat com IA (streaming, markdown)           |
+| `/skills`    | Gerenciamento de skills (upload .zip, listagem, remoção) |
+| `/documents` | Upload de PDFs + acompanhamento de processamento         |
+| `/settings`  | Seletor de provedor (Local/Remoto) + teste de conexão    |
+
+### Provider Pattern
+
+O client é backend-agnostic via `ConnectionProvider`:
+
+- **Modo Local:** conecta em `http://localhost:3000` (padrão)
+- **Modo Remoto:** URL configurável (ex: servidor universitário)
+- Configuração persistida em `localStorage`
+
+## �🔌 API Endpoints
 
 | Endpoint                       | Método | Descrição                              |
 | ------------------------------ | ------ | -------------------------------------- |
@@ -173,4 +205,4 @@ _(a definir)_
 
 ---
 
-**Status:** 🚧 Em desenvolvimento ativo - Server completo | Client pendente
+**Status:** 🚧 Em desenvolvimento ativo - Server completo | Client completo

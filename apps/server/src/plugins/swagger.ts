@@ -1,3 +1,4 @@
+import fp from 'fastify-plugin';
 import type { FastifyPluginAsync } from 'fastify';
 
 const swaggerPlugin: FastifyPluginAsync = async (fastify) => {
@@ -42,4 +43,4 @@ const swaggerPlugin: FastifyPluginAsync = async (fastify) => {
   fastify.log.info('Swagger documentation available at /docs');
 };
 
-export default swaggerPlugin;
+export default fp(swaggerPlugin);

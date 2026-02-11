@@ -1,3 +1,4 @@
+import fp from 'fastify-plugin';
 import type { FastifyPluginAsync } from 'fastify';
 
 const corsPlugin: FastifyPluginAsync = async (fastify) => {
@@ -7,4 +8,4 @@ const corsPlugin: FastifyPluginAsync = async (fastify) => {
   });
 };
 
-export default corsPlugin;
+export default fp(corsPlugin);
