@@ -92,6 +92,10 @@ export class ApiClient {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
-    return this.handleResponse<T>(response);
+    if (!response.ok) {
+      return { success: false, error: response.statusText };
+    }
+    const data = (await response.json()) as T;
+    return { success: true, data };
   }
 }
