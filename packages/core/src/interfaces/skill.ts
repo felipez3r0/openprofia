@@ -41,4 +41,25 @@ export interface ICreateSkillResponse {
   skillId: string;
   name: string;
   version: string;
+  missingModels?: string[];
+}
+
+/**
+ * Resultado da verificação de modelos de uma Skill
+ */
+export interface IModelCheckResult {
+  available: string[];
+  missing: string[];
+}
+
+/**
+ * Progresso de download de modelo Ollama
+ */
+export interface IModelPullProgress {
+  model: string;
+  status: string;
+  completed: number;
+  total: number;
+  percent: number;
+  done: boolean;
 }

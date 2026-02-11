@@ -1,9 +1,12 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { skillService } from '../../services/skill.service.js';
+import { ollamaService } from '../../services/ollama.service.js';
+import { logger } from '../../utils/logger.js';
 import {
   skillResponseSchema,
   skillsListResponseSchema,
   createSkillResponseSchema,
+  modelCheckResponseSchema,
 } from './schema.js';
 
 /**
@@ -99,11 +102,79 @@ const skillsRoutes: FastifyPluginAsync = async (fastify) => {
       // Instala a skill
       const skill = await skillService.installSkill(buffer, data.filename);
 
+      // Verifica modelos necessários no Ollama (graceful — falha não bloqueia install)
+      let missingModels: string[] = [];
+      try {
+        const requiredModels: string[] = [];
+        if (skill.manifest.modelPreferences?.chat) {
+          requiredModels.push(skill.manifest.modelPreferences.chat);
+        }
+        if (skill.manifest.modelPreferences?.embedding) {
+          requiredModels.push(skill.manifest.modelPreferences.embedding);
+        }
+        if (requiredModels.length > 0) {
+          const result =
+            await ollamaService.checkModelsAvailable(requiredModels);
+          missingModels = result.missing;
+        }
+      } catch (err) {
+        logger.warn(
+          { error: err, skillId: skill.id },
+          'Could not check Ollama models after skill install',
+        );
+      }
+
       return reply.code(201).send({
         skillId: skill.id,
         name: skill.manifest.name,
         version: skill.manifest.version,
+        missingModels,
       });
+    },
+  );
+
+  /**
+   * GET /skills/:id/check-models - Verifica modelos necessários da skill
+   */
+  fastify.get<{ Params: { id: string } }>(
+    '/:id/check-models',
+    {
+      schema: {
+        description:
+          'Check if Ollama has the models required by this skill installed',
+        tags: ['skills'],
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+          },
+          required: ['id'],
+        },
+        response: {
+          200: modelCheckResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const skill = skillService.getSkill(request.params.id);
+      if (!skill) {
+        return reply.code(404).send({ error: 'Skill not found' });
+      }
+
+      const requiredModels: string[] = [];
+      if (skill.manifest.modelPreferences?.chat) {
+        requiredModels.push(skill.manifest.modelPreferences.chat);
+      }
+      if (skill.manifest.modelPreferences?.embedding) {
+        requiredModels.push(skill.manifest.modelPreferences.embedding);
+      }
+
+      if (requiredModels.length === 0) {
+        return { available: [], missing: [] };
+      }
+
+      const result = await ollamaService.checkModelsAvailable(requiredModels);
+      return result;
     },
   );
 

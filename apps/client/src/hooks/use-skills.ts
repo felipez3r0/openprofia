@@ -9,12 +9,14 @@ export function useSkills() {
     activeSkillId,
     isLoading,
     error,
+    pendingModelInstall,
     setSkills,
     setActiveSkillId,
     addSkill,
     removeSkill,
     setLoading,
     setError,
+    setPendingModelInstall,
   } = useSkillStore();
 
   const fetchSkills = useCallback(async () => {
@@ -38,6 +40,15 @@ export function useSkills() {
         const result = await skillsApi.upload(file);
         const skill = await skillsApi.getById(result.skillId);
         addSkill(skill);
+
+        // Verifica se há modelos faltantes
+        if (result.missingModels && result.missingModels.length > 0) {
+          setPendingModelInstall({
+            skillName: result.name,
+            missingModels: result.missingModels,
+          });
+        }
+
         return result;
       } catch (err) {
         setError((err as Error).message);
@@ -46,7 +57,7 @@ export function useSkills() {
         setLoading(false);
       }
     },
-    [skillsApi, addSkill, setLoading, setError],
+    [skillsApi, addSkill, setLoading, setError, setPendingModelInstall],
   );
 
   const deleteSkill = useCallback(
@@ -74,9 +85,11 @@ export function useSkills() {
     activeSkillId,
     isLoading,
     error,
+    pendingModelInstall,
     fetchSkills,
     uploadSkill,
     deleteSkill,
     setActiveSkillId,
+    setPendingModelInstall,
   };
 }

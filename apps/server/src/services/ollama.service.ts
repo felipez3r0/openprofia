@@ -1,6 +1,7 @@
 import { defaultConfig } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import { ExternalServiceError } from '../utils/errors.js';
+import type { IModelCheckResult, IModelPullProgress } from '@openprofia/core';
 
 /**
  * Request para chat com Ollama
@@ -199,6 +200,105 @@ export class OllamaService {
         `Failed to list models: ${error}`,
       );
     }
+  }
+
+  /**
+   * Normaliza nome de modelo para comparação.
+   * "gemma2:2b" === "gemma2:2b", "nomic-embed-text" === "nomic-embed-text:latest"
+   */
+  private normalizeModelName(name: string): string {
+    return name.includes(':') ? name : `${name}:latest`;
+  }
+
+  /**
+   * Verifica quais modelos de uma lista estão instalados no Ollama.
+   */
+  async checkModelsAvailable(models: string[]): Promise<IModelCheckResult> {
+    const installedModels = await this.listModels();
+    const installedNormalized = new Set(
+      installedModels.map((m) => this.normalizeModelName(m)),
+    );
+
+    const available: string[] = [];
+    const missing: string[] = [];
+
+    for (const model of models) {
+      if (installedNormalized.has(this.normalizeModelName(model))) {
+        available.push(model);
+      } else {
+        missing.push(model);
+      }
+    }
+
+    return { available, missing };
+  }
+
+  /**
+   * Faz pull (download) de um modelo no Ollama.
+   * Retorna AsyncGenerator com progresso de download (NDJSON do Ollama).
+   */
+  async *pullModel(
+    model: string,
+  ): AsyncGenerator<IModelPullProgress, void, unknown> {
+    const url = `${this.baseUrl}/api/pull`;
+
+    logger.info({ model }, 'Starting model pull from Ollama');
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: model, stream: true }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new ExternalServiceError(
+        'Ollama',
+        `Failed to pull model "${model}": ${response.status} - ${errorText}`,
+      );
+    }
+
+    if (!response.body) {
+      throw new ExternalServiceError('Ollama', 'No response body from pull');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n').filter((line) => line.trim());
+
+      for (const line of lines) {
+        try {
+          const data = JSON.parse(line) as {
+            status?: string;
+            completed?: number;
+            total?: number;
+          };
+          const completed = data.completed ?? 0;
+          const total = data.total ?? 0;
+          const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+          const isDone = data.status === 'success';
+
+          yield {
+            model,
+            status: data.status ?? 'unknown',
+            completed,
+            total,
+            percent,
+            done: isDone,
+          };
+        } catch {
+          logger.debug({ line }, 'Failed to parse pull progress chunk');
+        }
+      }
+    }
+
+    logger.info({ model }, 'Model pull completed');
   }
 }
 

@@ -11,6 +11,8 @@ export type {
   ISkill,
   ICreateSkillRequest,
   ICreateSkillResponse,
+  IModelCheckResult,
+  IModelPullProgress,
   IJob,
   IUploadDocumentRequest,
   IUploadDocumentResponse,

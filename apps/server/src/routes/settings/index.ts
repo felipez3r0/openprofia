@@ -96,6 +96,48 @@ const settingsRoutes: FastifyPluginAsync = async (fastify) => {
       return { success: true, data: models };
     },
   );
+
+  // POST /api/settings/ollama/pull — pull (download) de um modelo via SSE streaming
+  fastify.post<{ Body: { model: string } }>(
+    '/ollama/pull',
+    {
+      schema: {
+        description:
+          'Pull (download) an Ollama model with real-time progress via SSE',
+        tags: ['settings'],
+        body: S.object()
+          .prop('model', S.string().minLength(1))
+          .required(['model']),
+      },
+    },
+    async (request, reply) => {
+      const { model } = request.body;
+
+      reply.raw.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      });
+
+      try {
+        for await (const progress of ollamaService.pullModel(model)) {
+          reply.raw.write(`data: ${JSON.stringify(progress)}\n\n`);
+        }
+        reply.raw.write(
+          `data: ${JSON.stringify({ model, status: 'success', completed: 0, total: 0, percent: 100, done: true })}\n\n`,
+        );
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Unknown error';
+        reply.raw.write(
+          `data: ${JSON.stringify({ model, status: 'error', completed: 0, total: 0, percent: 0, done: true, error: message })}\n\n`,
+        );
+        logger.error({ error, model }, 'Failed to pull Ollama model');
+      } finally {
+        reply.raw.end();
+      }
+    },
+  );
 };
 
 export default settingsRoutes;

@@ -35,4 +35,12 @@ export const skillsListResponseSchema = S.array().items(skillResponseSchema);
 export const createSkillResponseSchema = S.object()
   .prop('skillId', S.string())
   .prop('name', S.string())
-  .prop('version', S.string());
+  .prop('version', S.string())
+  .prop('missingModels', S.array().items(S.string()));
+
+/**
+ * Schema de verificação de modelos
+ */
+export const modelCheckResponseSchema = S.object()
+  .prop('available', S.array().items(S.string()))
+  .prop('missing', S.array().items(S.string()));

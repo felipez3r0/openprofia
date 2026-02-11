@@ -1,4 +1,4 @@
-import type { ISkill, ICreateSkillResponse } from '@/types';
+import type { ISkill, ICreateSkillResponse, IModelCheckResult } from '@/types';
 import type { ApiClient } from './client';
 
 export function createSkillsApi(client: ApiClient) {
@@ -30,6 +30,16 @@ export function createSkillsApi(client: ApiClient) {
       );
       if (!response.success || !response.data) {
         throw new Error(response.error ?? 'Failed to upload skill');
+      }
+      return response.data;
+    },
+
+    async checkModels(id: string): Promise<IModelCheckResult> {
+      const response = await client.get<IModelCheckResult>(
+        `/skills/${encodeURIComponent(id)}/check-models`,
+      );
+      if (!response.success || !response.data) {
+        throw new Error(response.error ?? 'Failed to check skill models');
       }
       return response.data;
     },

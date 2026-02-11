@@ -1,10 +1,18 @@
 import { useSkills } from '@/hooks/use-skills';
 import { SkillList } from '@/components/skills/skill-list';
 import { SkillUploader } from '@/components/skills/skill-uploader';
+import { ModelInstallDialog } from '@/components/skills/model-install-dialog';
 import { Separator } from '@/components/ui/separator';
 
 export function SkillsPage() {
-  const { skills, isLoading, uploadSkill, deleteSkill } = useSkills();
+  const {
+    skills,
+    isLoading,
+    uploadSkill,
+    deleteSkill,
+    pendingModelInstall,
+    setPendingModelInstall,
+  } = useSkills();
 
   const handleUpload = async (file: File) => {
     await uploadSkill(file);
@@ -23,6 +31,14 @@ export function SkillsPage() {
         <Separator />
         <SkillList skills={skills} onDelete={deleteSkill} />
       </div>
+
+      {pendingModelInstall && (
+        <ModelInstallDialog
+          skillName={pendingModelInstall.skillName}
+          missingModels={pendingModelInstall.missingModels}
+          onClose={() => setPendingModelInstall(null)}
+        />
+      )}
     </div>
   );
 }
