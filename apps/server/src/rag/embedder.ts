@@ -1,4 +1,4 @@
-import { defaultConfig } from '../config/env.js';
+import { settingsService } from '../services/settings.service.js';
 import { logger } from '../utils/logger.js';
 import { ExternalServiceError } from '../utils/errors.js';
 
@@ -16,8 +16,8 @@ export interface EmbeddingResult {
 export async function generateEmbedding(
   text: string,
 ): Promise<EmbeddingResult> {
-  const url = `${defaultConfig.OLLAMA_BASE_URL}/api/embeddings`;
-  const model = defaultConfig.OLLAMA_EMBEDDING_MODEL;
+  const url = `${settingsService.get('ollama_base_url')}/api/embeddings`;
+  const model = settingsService.get('ollama_embedding_model');
 
   try {
     const response = await fetch(url, {

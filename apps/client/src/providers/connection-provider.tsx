@@ -5,6 +5,7 @@ import { createChatApi, type ChatApi } from '@/api/chat.api';
 import { createSkillsApi, type SkillsApi } from '@/api/skills.api';
 import { createDocumentsApi, type DocumentsApi } from '@/api/documents.api';
 import { createHealthApi, type HealthApi } from '@/api/health.api';
+import { createSettingsApi, type SettingsApi } from '@/api/settings.api';
 import { useConnectionStore } from '@/stores/connection.store';
 
 interface ApiContextValue {
@@ -13,6 +14,7 @@ interface ApiContextValue {
   skillsApi: SkillsApi;
   documentsApi: DocumentsApi;
   healthApi: HealthApi;
+  settingsApi: SettingsApi;
 }
 
 const ApiContext = createContext<ApiContextValue | null>(null);
@@ -28,6 +30,7 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
       skillsApi: createSkillsApi(client),
       documentsApi: createDocumentsApi(client),
       healthApi: createHealthApi(client),
+      settingsApi: createSettingsApi(client),
     };
   }, [baseUrl]);
 

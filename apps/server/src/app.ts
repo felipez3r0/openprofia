@@ -12,6 +12,7 @@ import healthRoutes from './routes/health/index.js';
 import chatRoutes from './routes/chat/index.js';
 import skillsRoutes from './routes/skills/index.js';
 import documentsRoutes from './routes/documents/index.js';
+import settingsRoutes from './routes/settings/index.js';
 
 /**
  * Cria e configura a aplicação Fastify
@@ -74,6 +75,7 @@ export async function buildApp(
       await api.register(chatRoutes, { prefix: '/chat' });
       await api.register(skillsRoutes, { prefix: '/skills' });
       await api.register(documentsRoutes, { prefix: '/documents' });
+      await api.register(settingsRoutes, { prefix: '/settings' });
     },
     { prefix: '/api' },
   );

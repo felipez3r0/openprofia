@@ -48,6 +48,15 @@ export class ApiClient {
     return this.handleResponse<T>(response);
   }
 
+  async put<T>(path: string, body: unknown): Promise<IApiResponse<T>> {
+    const response = await fetch(this.url(path), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return this.handleResponse<T>(response);
+  }
+
   async postFormData<T>(
     path: string,
     formData: FormData,

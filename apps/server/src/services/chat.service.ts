@@ -4,6 +4,7 @@ import type {
   IChatMessage,
 } from '@openprofia/core';
 import { ollamaService } from './ollama.service.js';
+import { settingsService } from './settings.service.js';
 import { searchChunks } from '../rag/search.js';
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
@@ -58,7 +59,8 @@ export class ChatService {
 
     // Chama Ollama
     const model =
-      skill.manifest.modelPreferences?.chat || defaultConfig.OLLAMA_CHAT_MODEL;
+      skill.manifest.modelPreferences?.chat ||
+      settingsService.get('ollama_chat_model');
     const response = await ollamaService.chat({
       model,
       messages: finalMessages.map((m) => ({
@@ -133,7 +135,8 @@ export class ChatService {
     );
 
     const model =
-      skill.manifest.modelPreferences?.chat || defaultConfig.OLLAMA_CHAT_MODEL;
+      skill.manifest.modelPreferences?.chat ||
+      settingsService.get('ollama_chat_model');
 
     for await (const chunk of ollamaService.chatStream({
       model,

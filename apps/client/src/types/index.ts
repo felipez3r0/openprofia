@@ -2,6 +2,7 @@ export type {
   IApiResponse,
   IPaginatedResponse,
   IErrorResponse,
+  ISettingsMap,
   IChatMessage,
   IChatRequest,
   IChatResponse,

@@ -27,3 +27,17 @@ export interface IErrorResponse {
   message: string;
   details?: Record<string, unknown>;
 }
+
+/**
+ * Configurações do sistema (key-value persistido no SQLite)
+ */
+export interface ISettingsMap {
+  ollama_base_url?: string;
+  ollama_chat_model?: string;
+  ollama_embedding_model?: string;
+}
+
+/**
+ * Chaves válidas de settings
+ */
+export type SettingsKey = keyof ISettingsMap;

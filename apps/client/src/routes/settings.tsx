@@ -1,7 +1,12 @@
 import { ProviderSelector } from '@/components/connection/provider-selector';
+import { OllamaSettings } from '@/components/settings/ollama-settings';
 import { Separator } from '@/components/ui/separator';
+import { useConnection } from '@/hooks/use-connection';
 
 export function SettingsPage() {
+  const { mode } = useConnection();
+  const isLocal = mode === 'local';
+
   return (
     <div className="flex flex-1 flex-col overflow-auto">
       <div className="border-b px-6 py-4">
@@ -14,6 +19,11 @@ export function SettingsPage() {
         <div>
           <h2 className="mb-4 text-sm font-semibold">Conexão</h2>
           <ProviderSelector />
+        </div>
+        <Separator />
+        <div>
+          <h2 className="mb-4 text-sm font-semibold">Modelos de IA</h2>
+          <OllamaSettings readonly={!isLocal} />
         </div>
         <Separator />
         <div>

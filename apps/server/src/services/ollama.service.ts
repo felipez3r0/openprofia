@@ -38,6 +38,18 @@ export class OllamaService {
   }
 
   /**
+   * Atualiza a base URL em runtime (chamado ao salvar settings)
+   */
+  updateBaseUrl(url: string): void {
+    this.baseUrl = url;
+    logger.info({ baseUrl: url }, 'Ollama base URL updated');
+  }
+
+  getBaseUrl(): string {
+    return this.baseUrl;
+  }
+
+  /**
    * Envia request de chat para Ollama (não-streaming)
    */
   async chat(request: OllamaChatRequest): Promise<OllamaChatResponse> {
@@ -164,11 +176,13 @@ export class OllamaService {
   }
 
   /**
-   * Lista modelos disponíveis
+   * Lista modelos disponíveis.
+   * Aceita URL opcional para testar um endpoint diferente do configurado.
    */
-  async listModels(): Promise<string[]> {
+  async listModels(url?: string): Promise<string[]> {
+    const targetUrl = url?.trim() || this.baseUrl;
     try {
-      const response = await fetch(`${this.baseUrl}/api/tags`, {
+      const response = await fetch(`${targetUrl}/api/tags`, {
         signal: AbortSignal.timeout(5000),
       });
 
@@ -177,9 +191,9 @@ export class OllamaService {
       }
 
       const data = await response.json();
-      return data.models?.map((m: any) => m.name) || [];
+      return data.models?.map((m: { name: string }) => m.name) || [];
     } catch (error) {
-      logger.error({ error }, 'Failed to list Ollama models');
+      logger.error({ error, targetUrl }, 'Failed to list Ollama models');
       throw new ExternalServiceError(
         'Ollama',
         `Failed to list models: ${error}`,
