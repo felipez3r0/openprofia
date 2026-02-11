@@ -201,7 +201,91 @@ MIT
 
 ## 🤝 Contribuindo
 
-_(a definir)_
+Contribuições são muito bem-vindas! OpenProfIA é um projeto comunitário e toda ajuda conta — seja código, documentação, skills ou feedback.
+
+### Como começar
+
+1. **Fork** o repositório e clone localmente
+2. Instale as dependências: `pnpm install`
+3. Crie uma branch a partir de `main`: `git checkout -b feat/minha-contribuicao`
+4. Faça suas alterações seguindo os padrões abaixo
+5. Rode o typecheck: `pnpm typecheck`
+6. Commit com mensagens claras (veja convenção abaixo)
+7. Abra um **Pull Request** descrevendo o que foi feito e por quê
+
+### Convenção de Commits
+
+Usamos [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+feat: adiciona endpoint de listagem de modelos
+fix: corrige timeout na conexão com Ollama
+docs: atualiza seção de Quick Start no README
+refactor: extrai lógica de chunking para módulo separado
+chore: atualiza dependências do workspace
+```
+
+### Padrões de Código
+
+- **TypeScript estrito** — evite `any` a todo custo
+- Prefira `interface` sobre `type` para definições de API e modelos de dados
+- Tipos compartilhados ficam em `packages/core`
+- Backend segue o padrão de **Plugins do Fastify** com validação via JSON Schema
+- Frontend usa **Componentes Funcionais + Hooks**, estilizados com **Tailwind CSS** e **Shadcn/UI**
+- Consulte o [AGENTS.md](AGENTS.md) para referência completa dos padrões
+
+### Tipos de Contribuição
+
+| Tipo       | Descrição                                                       |
+| ---------- | --------------------------------------------------------------- |
+| 🐛 Bug fix | Correção de erros — abra uma issue antes, se possível           |
+| ✨ Feature | Funcionalidade nova — discuta em uma issue antes de implementar |
+| 📖 Docs    | Melhorias na documentação, exemplos e tutoriais                 |
+| 🧩 Skills  | Criação de novas skills comunitárias (veja abaixo)              |
+| 🧪 Testes  | Aumento de cobertura de testes                                  |
+| 🌐 i18n    | Traduções e internacionalização                                 |
+
+### Criando Skills
+
+Skills são a forma mais acessível de contribuir, mesmo sem experiência em programação. Uma skill é um pacote `.zip` **puramente declarativo** contendo:
+
+- `manifest.json` — metadados e configurações
+- `prompt.md` — prompt de sistema para a IA
+- `knowledge/` — documentos de referência (PDFs, TXT)
+
+> ⚠️ **Regra de segurança:** Skills **não podem** conter código executável (`.js`, `.sh`, `.bin`, `.exe`). Consulte a seção [Sistema de Skills](#-sistema-de-skills) para detalhes.
+
+### Reportando Bugs
+
+Ao abrir uma issue de bug, inclua:
+
+- Descrição clara do problema
+- Passos para reproduzir
+- Comportamento esperado vs. observado
+- Sistema operacional e versão do Node.js
+- Modelo Ollama em uso (se relevante)
+
+### Ambiente de Desenvolvimento
+
+```bash
+# Pré-requisitos
+node --version   # >= 22 LTS
+pnpm --version   # >= 9
+ollama --version  # Ollama rodando em localhost:11434
+
+# Desenvolvimento
+pnpm dev          # Inicia server + client em watch mode
+pnpm typecheck    # Verifica tipos em todo o monorepo
+```
+
+### Princípios do Projeto
+
+Ao contribuir, tenha em mente:
+
+- **Local-first** — tudo deve funcionar offline, em hardware doméstico, sem GPU dedicada
+- **Minimalismo** — evite dependências pesadas que aumentem o bundle do Tauri
+- **Eficiência** — processamento de documentos deve ser chunked para evitar picos de CPU/RAM
+- **Segurança** — skills são sandboxed e declarativas por design
 
 ---
 
