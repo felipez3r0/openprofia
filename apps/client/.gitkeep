@@ -1,0 +1,20 @@
+# OpenProfIA Client
+
+Desktop client (Tauri + React + Tailwind + Shadcn/UI)
+
+**A ser implementado em etapa futura.**
+
+Este diretório conterá:
+
+- Interface de chat minimalista
+- Seletor de provedor (Local vs. Remoto)
+- Gerenciador de Skills
+- Upload de documentos
+
+## Stack Prevista
+
+- **Framework Desktop:** Tauri
+- **Frontend:** React + TypeScript
+- **Estilização:** Tailwind CSS + Shadcn/UI
+- **Estado:** Zustand ou Context API
+- **Comunicação:** Fetch API (conecta ao server via HTTP/SSE)

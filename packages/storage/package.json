@@ -1,0 +1,6 @@
+{
+  "name": "@openprofia/storage",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Diretório de armazenamento para SQLite e LanceDB - gerado em runtime"
+}

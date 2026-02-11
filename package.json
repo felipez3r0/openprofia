@@ -1,0 +1,30 @@
+{
+  "name": "openprofia",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plataforma de IA Open Source local-first para educação",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "clean": "turbo clean && rm -rf node_modules .turbo"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "keywords": [
+    "education",
+    "ai",
+    "local-first",
+    "llm",
+    "rag"
+  ],
+  "author": "",
+  "license": "MIT"
+}

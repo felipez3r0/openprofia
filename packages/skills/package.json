@@ -1,0 +1,6 @@
+{
+  "name": "@openprofia/skills",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Diretório de Skills instaladas - extraídas de arquivos .zip"
+}

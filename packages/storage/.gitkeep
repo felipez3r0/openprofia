@@ -1,0 +1,9 @@
+# Storage Package
+
+Este diretório armazena os dados persistentes do OpenProfIA:
+
+- `openprofia.db` - SQLite database (jobs, skills, settings)
+- `vectors/` - LanceDB vector indexes (RAG embeddings)
+- `uploads/` - Documentos enviados pelos usuários
+
+Todos os arquivos são gerados em runtime e não devem ser versionados.
