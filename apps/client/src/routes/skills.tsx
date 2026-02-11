@@ -8,6 +8,7 @@ export function SkillsPage() {
   const {
     skills,
     isLoading,
+    error,
     uploadSkill,
     deleteSkill,
     pendingModelInstall,
@@ -15,7 +16,11 @@ export function SkillsPage() {
   } = useSkills();
 
   const handleUpload = async (file: File) => {
-    await uploadSkill(file);
+    try {
+      await uploadSkill(file);
+    } catch {
+      // error already stored in skill store
+    }
   };
 
   return (
@@ -27,7 +32,11 @@ export function SkillsPage() {
         </p>
       </div>
       <div className="flex-1 space-y-6 p-6">
-        <SkillUploader onUpload={handleUpload} isLoading={isLoading} />
+        <SkillUploader
+          onUpload={handleUpload}
+          isLoading={isLoading}
+          error={error}
+        />
         <Separator />
         <SkillList skills={skills} onDelete={deleteSkill} />
       </div>

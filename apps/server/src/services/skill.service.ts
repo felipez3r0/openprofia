@@ -88,8 +88,27 @@ export class SkillService {
       const zip = new AdmZip(zipBuffer);
       zip.extractAllTo(tempDir, true);
 
+      // Resolve o diretório raiz da skill dentro do zip.
+      // Se o zip contém uma única pasta (ex: skill-id/) com o manifest dentro,
+      // usa essa subpasta como raiz efetiva.
+      let skillRoot = tempDir;
+      const manifestAtRoot = path.join(tempDir, 'manifest.json');
+
+      if (!existsSync(manifestAtRoot)) {
+        const entries = readdirSync(tempDir).filter((e) => !e.startsWith('.'));
+        if (
+          entries.length === 1 &&
+          statSync(path.join(tempDir, entries[0])).isDirectory()
+        ) {
+          const nested = path.join(tempDir, entries[0]);
+          if (existsSync(path.join(nested, 'manifest.json'))) {
+            skillRoot = nested;
+          }
+        }
+      }
+
       // Valida o manifest
-      const manifestPath = path.join(tempDir, 'manifest.json');
+      const manifestPath = path.join(skillRoot, 'manifest.json');
       if (!existsSync(manifestPath)) {
         throw new ValidationError('manifest.json not found in skill package');
       }
@@ -104,7 +123,7 @@ export class SkillService {
       const manifest = rawManifest as unknown as ISkillManifest;
 
       // Valida segurança: nenhum arquivo executável
-      this.validateNoExecutables(tempDir);
+      this.validateNoExecutables(skillRoot);
 
       // Verifica se já existe
       if (this.getSkill(manifest.id)) {
@@ -116,7 +135,12 @@ export class SkillService {
       if (existsSync(finalPath)) {
         rmSync(finalPath, { recursive: true });
       }
-      renameSync(tempDir, finalPath);
+      renameSync(skillRoot, finalPath);
+
+      // Limpa diretório temporário restante se skillRoot era subpasta
+      if (skillRoot !== tempDir && existsSync(tempDir)) {
+        rmSync(tempDir, { recursive: true });
+      }
 
       // Verifica se tem diretório knowledge
       const hasKnowledge = existsSync(path.join(finalPath, 'knowledge'));
