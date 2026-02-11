@@ -1,6 +1,6 @@
 # OpenProfIA
 
-Plataforma de IA Open Source local-first para educação K-12.
+Plataforma de IA Open Source local-first para educação.
 
 ## 📚 Visão Geral
 
