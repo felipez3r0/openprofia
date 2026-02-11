@@ -8,7 +8,11 @@ import {
 import { extractText } from '../rag/extractor.js';
 import { chunkText } from '../rag/chunker.js';
 import { generateEmbeddings } from '../rag/embedder.js';
-import { createChunksTable, getChunksTable, makeChunksArrowTable } from '../db/lance.js';
+import {
+  createChunksTable,
+  getChunksTable,
+  makeChunksArrowTable,
+} from '../db/lance.js';
 import { defaultConfig } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import db from '../db/connection.js';

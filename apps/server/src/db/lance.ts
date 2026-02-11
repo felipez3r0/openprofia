@@ -75,7 +75,9 @@ interface ChunkRecord {
 /**
  * Converte dados de chunks para Arrow Table com schema correto (FixedSizeList<Float32>)
  */
-export function makeChunksArrowTable(data: ChunkRecord[]): ReturnType<typeof makeArrowTable> {
+export function makeChunksArrowTable(
+  data: ChunkRecord[],
+): ReturnType<typeof makeArrowTable> {
   return makeArrowTable(data, {
     vectorColumns: {
       embedding: new VectorColumnOptions(),
