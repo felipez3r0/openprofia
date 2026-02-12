@@ -9,8 +9,32 @@ import { useConnectionStore } from '@/stores/connection.store';
 export function useSidecar() {
   const { mode, setSidecarStatus, sidecarStatus } = useConnectionStore();
 
-  // Detecta se está em ambiente Tauri
-  const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
+  // Detecta se está em ambiente Tauri - No Tauri v2, verifica __TAURI_INTERNALS__
+  const isTauri = (() => {
+    try {
+      return (
+        typeof window !== 'undefined' &&
+        typeof window.__TAURI_INTERNALS__ !== 'undefined'
+      );
+    } catch {
+      return false;
+    }
+  })();
+
+  console.log('[Sidecar] Hook initialized:', { isTauri, mode, sidecarStatus });
+
+  // Reseta o status ao montar se estiver em estado inconsistente
+  useEffect(() => {
+    if (isTauri && mode === 'embedded' && sidecarStatus === 'starting') {
+      console.log('[Sidecar] Resetting stuck "starting" status to "stopped"');
+      setSidecarStatus('stopped');
+    }
+  }, []); // Executa apenas na montagem
+
+  // Log sempre que o status mudar
+  useEffect(() => {
+    console.log('[Sidecar] Status changed to:', sidecarStatus);
+  }, [sidecarStatus]);
 
   /**
    * Inicia o sidecar server
@@ -22,29 +46,46 @@ export function useSidecar() {
     }
 
     try {
+      console.log('[Sidecar] Starting sidecar...');
       setSidecarStatus('starting');
 
       const result = await invoke<string>('start_sidecar');
+      console.log('[Sidecar] Invoke result:', result);
 
       if (result === 'already_running') {
+        console.log('[Sidecar] Already running');
         setSidecarStatus('running');
         return true;
       }
 
       if (result === 'started') {
+        console.log('[Sidecar] Started, waiting for health check...');
+
+        // Aguarda um pouco antes de começar o polling para dar tempo do servidor iniciar
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
         // Aguarda o servidor ficar pronto (polling no health check)
         const maxAttempts = 60; // 30s timeout (500ms * 60)
         let attempts = 0;
 
         while (attempts < maxAttempts) {
           try {
+            console.log(
+              `[Sidecar] Health check attempt ${attempts + 1}/${maxAttempts}...`,
+            );
             const response = await fetch('http://localhost:3000/health');
+            console.log(`[Sidecar] Health response status: ${response.status}`);
             if (response.ok) {
+              const data = await response.json();
+              console.log('[Sidecar] Health check OK, server is ready:', data);
               setSidecarStatus('running');
               return true;
             }
-          } catch {
-            // Server ainda não está pronto, continua tentando
+          } catch (err) {
+            console.log(
+              `[Sidecar] Health check attempt ${attempts + 1}/${maxAttempts} failed:`,
+              err instanceof Error ? err.message : String(err),
+            );
           }
 
           await new Promise((resolve) => setTimeout(resolve, 500));
@@ -52,11 +93,12 @@ export function useSidecar() {
         }
 
         // Timeout
-        setSidecarStatus('error');
         console.error('[Sidecar] Timeout waiting for server to start');
+        setSidecarStatus('error');
         return false;
       }
 
+      console.error('[Sidecar] Unexpected result:', result);
       setSidecarStatus('error');
       return false;
     } catch (error) {
@@ -75,7 +117,9 @@ export function useSidecar() {
     }
 
     try {
+      console.log('[Sidecar] Stopping sidecar...');
       const result = await invoke<string>('stop_sidecar');
+      console.log('[Sidecar] Stop result:', result);
 
       if (result === 'stopped' || result === 'not_running') {
         setSidecarStatus('stopped');
@@ -99,6 +143,7 @@ export function useSidecar() {
 
     try {
       const isRunning = await invoke<boolean>('is_sidecar_running');
+      console.log('[Sidecar] Running check:', isRunning);
 
       if (isRunning && sidecarStatus !== 'running') {
         setSidecarStatus('running');
@@ -117,7 +162,14 @@ export function useSidecar() {
    * Auto-start sidecar quando modo for 'embedded'
    */
   useEffect(() => {
+    console.log('[Sidecar] Auto-start effect triggered:', {
+      mode,
+      isTauri,
+      sidecarStatus,
+    });
+
     if (mode === 'embedded' && isTauri && sidecarStatus === 'stopped') {
+      console.log('[Sidecar] Auto-starting in embedded mode');
       startSidecar();
     }
   }, [mode, isTauri, sidecarStatus, startSidecar]);
@@ -128,6 +180,7 @@ export function useSidecar() {
   useEffect(() => {
     return () => {
       if (mode === 'embedded' && isTauri && sidecarStatus === 'running') {
+        console.log('[Sidecar] Cleanup: stopping sidecar');
         stopSidecar();
       }
     };

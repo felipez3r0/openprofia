@@ -1,7 +1,19 @@
 #!/bin/bash
 # OpenProfIA Server Sidecar Wrapper (macOS)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-BUNDLE_DIR="$SCRIPT_DIR/server-bundle"
+
+# Encontra o diretório do bundle
+# Em dev: target/debug/server-bundle (copiado pelo Tauri)
+# Em produção: mesmo diretório do binário
+if [ -d "$SCRIPT_DIR/server-bundle" ]; then
+  BUNDLE_DIR="$SCRIPT_DIR/server-bundle"
+elif [ -d "$SCRIPT_DIR/../binaries/server-bundle" ]; then
+  # Fallback para o diretório original se não foi copiado ainda
+  BUNDLE_DIR="$SCRIPT_DIR/../binaries/server-bundle"
+else
+  echo "ERROR: server-bundle not found" >&2
+  exit 1
+fi
 
 # Define NODE_PATH para encontrar os módulos nativos
 export NODE_PATH="$BUNDLE_DIR/node_modules"
@@ -12,6 +24,28 @@ export NODE_ENV="production"
 # Define SIDECAR_MODE para desabilitar Swagger
 export SIDECAR_MODE="1"
 
-# Usa o node do PATH (para desenvolvimento)
-# Em produção, apontaria para um node runtime embarcado
-exec node "$BUNDLE_DIR/server.js" "$@"
+# Tenta encontrar node em locais comuns
+if [ -n "$NODE_PATH_OVERRIDE" ]; then
+  NODE_BIN="$NODE_PATH_OVERRIDE"
+elif command -v node >/dev/null 2>&1; then
+  NODE_BIN="$(command -v node)"
+elif [ -f "/usr/local/bin/node" ]; then
+  NODE_BIN="/usr/local/bin/node"
+elif [ -f "$HOME/.nvm/versions/node/v22.18.0/bin/node" ]; then
+  NODE_BIN="$HOME/.nvm/versions/node/v22.18.0/bin/node"
+elif [ -f "/opt/homebrew/bin/node" ]; then
+  NODE_BIN="/opt/homebrew/bin/node"
+else
+  echo "ERROR: Node.js not found. Please install Node.js or set NODE_PATH_OVERRIDE" >&2
+  exit 1
+fi
+
+echo "[Wrapper] Using Node.js: $NODE_BIN" >&2
+echo "[Wrapper] Bundle dir: $BUNDLE_DIR" >&2
+echo "[Wrapper] Data dir: $OPENPROFIA_DATA_DIR" >&2
+
+# Muda para o diretório do bundle antes de executar (para que process.cwd() seja o bundle)
+cd "$BUNDLE_DIR"
+
+# Executa o servidor
+exec "$NODE_BIN" "$BUNDLE_DIR/server.js" "$@"

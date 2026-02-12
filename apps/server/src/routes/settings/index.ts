@@ -92,8 +92,20 @@ const settingsRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request) => {
       const { url } = request.query as { url?: string };
-      const models = await ollamaService.listModels(url);
-      return { success: true, data: models };
+      logger.info({ url, hasUrl: !!url }, 'Listing Ollama models');
+      try {
+        const models = await ollamaService.listModels(url);
+        logger.info(
+          { count: models.length },
+          'Ollama models listed successfully',
+        );
+        return { success: true, data: models };
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Unknown error';
+        logger.error({ error: message, url }, 'Failed to list Ollama models');
+        throw error;
+      }
     },
   );
 

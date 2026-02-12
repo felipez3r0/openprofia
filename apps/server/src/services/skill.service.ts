@@ -32,11 +32,22 @@ export class SkillService {
   private skillsPath: string;
 
   constructor() {
-    this.skillsPath = path.resolve(
-      __dirname,
-      '../..',
-      defaultConfig.SKILLS_PATH,
-    );
+    // Em modo sidecar, o SKILLS_PATH é relativo ao bundle (./skills)
+    // Caso contrário, é relativo ao repositório (../../packages/skills)
+    const configPath = defaultConfig.SKILLS_PATH;
+
+    if (defaultConfig.SIDECAR_MODE && !path.isAbsolute(configPath)) {
+      // Em sidecar, resolve relativo ao diretório de trabalho (onde está o bundle)
+      this.skillsPath = path.resolve(process.cwd(), configPath);
+    } else if (!path.isAbsolute(configPath)) {
+      // Em modo dev, resolve relativo ao source file
+      this.skillsPath = path.resolve(__dirname, '../..', configPath);
+    } else {
+      // Caminho já é absoluto
+      this.skillsPath = configPath;
+    }
+
+    logger.info({ skillsPath: this.skillsPath }, 'Skills directory configured');
     this.ensureSkillsDirectory();
   }
 
@@ -284,9 +295,18 @@ export class SkillService {
    * Usado no startup para garantir que skills built-in estejam sempre disponíveis.
    */
   seedDefaultSkills(): void {
-    if (!existsSync(this.skillsPath)) return;
+    logger.info(
+      { skillsPath: this.skillsPath, exists: existsSync(this.skillsPath) },
+      'Seeding default skills',
+    );
+
+    if (!existsSync(this.skillsPath)) {
+      logger.warn('Skills directory does not exist, skipping seed');
+      return;
+    }
 
     const entries = readdirSync(this.skillsPath);
+    logger.info({ entries }, 'Found entries in skills directory');
 
     for (const entry of entries) {
       if (entry.startsWith('.')) continue;
@@ -295,7 +315,10 @@ export class SkillService {
       if (!statSync(skillDir).isDirectory()) continue;
 
       const manifestPath = path.join(skillDir, 'manifest.json');
-      if (!existsSync(manifestPath)) continue;
+      if (!existsSync(manifestPath)) {
+        logger.debug({ entry }, 'Skipping entry without manifest.json');
+        continue;
+      }
 
       try {
         const manifest: ISkillManifest = JSON.parse(
@@ -303,7 +326,10 @@ export class SkillService {
         );
 
         // Pula se já registrada no banco
-        if (this.getSkill(manifest.id)) continue;
+        if (this.getSkill(manifest.id)) {
+          logger.debug({ skillId: manifest.id }, 'Skill already registered');
+          continue;
+        }
 
         const hasKnowledge = existsSync(path.join(skillDir, 'knowledge'));
 

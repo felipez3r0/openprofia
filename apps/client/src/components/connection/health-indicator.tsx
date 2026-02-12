@@ -15,6 +15,15 @@ export function HealthIndicator() {
   const { sidecarStatus } = useApi();
   const mode = useConnectionStore((s) => s.mode);
 
+  console.log('[HealthIndicator] Render:', {
+    connected,
+    ollama,
+    database,
+    isChecking,
+    sidecarStatus,
+    mode,
+  });
+
   const isSidecarStarting = mode === 'embedded' && sidecarStatus === 'starting';
 
   const statusColor = connected
@@ -28,7 +37,7 @@ export function HealthIndicator() {
     : connected
       ? ollama === 'ok'
         ? 'Todos os serviços online'
-        : 'Ollama indisponível'
+        : 'Servidor online (Ollama offline)'
       : 'Servidor desconectado';
 
   return (
@@ -57,7 +66,10 @@ export function HealthIndicator() {
           <div className="space-y-1 text-xs">
             {mode === 'embedded' && <p>Modo: Servidor Integrado</p>}
             <p>Servidor: {connected ? 'Online' : 'Offline'}</p>
-            <p>Ollama: {ollama}</p>
+            <p>
+              Ollama: {ollama}
+              {ollama === 'unavailable' && ' (verifique se está rodando)'}
+            </p>
             <p>Database: {database}</p>
           </div>
         </TooltipContent>

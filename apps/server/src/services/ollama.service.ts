@@ -163,14 +163,26 @@ export class OllamaService {
    */
   async healthCheck(): Promise<boolean> {
     try {
+      logger.debug({ baseUrl: this.baseUrl }, 'Checking Ollama health...');
       const response = await fetch(`${this.baseUrl}/api/tags`, {
         signal: AbortSignal.timeout(5000),
       });
-      return response.ok;
+      const isOk = response.ok;
+      if (isOk) {
+        logger.debug({ baseUrl: this.baseUrl }, 'Ollama is healthy');
+      } else {
+        logger.warn(
+          { baseUrl: this.baseUrl, status: response.status },
+          'Ollama returned non-OK status',
+        );
+      }
+      return isOk;
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       logger.warn(
-        { error, baseUrl: this.baseUrl },
-        'Ollama health check failed',
+        { error: errorMessage, baseUrl: this.baseUrl },
+        'Ollama health check failed - is Ollama running?',
       );
       return false;
     }

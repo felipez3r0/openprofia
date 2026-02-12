@@ -27,11 +27,18 @@ export function createSettingsApi(client: ApiClient) {
 
     async listOllamaModels(url?: string): Promise<string[]> {
       const query = url ? `?url=${encodeURIComponent(url)}` : '';
+      console.log(
+        '[SettingsAPI] Requesting Ollama models:',
+        `/settings/ollama/models${query}`,
+      );
       const response = await client.get<string[]>(
         `/settings/ollama/models${query}`,
       );
+      console.log('[SettingsAPI] Ollama models response:', response);
       if (!response.success || !response.data) {
-        throw new Error(response.error ?? 'Failed to list Ollama models');
+        const error = response.error ?? 'Failed to list Ollama models';
+        console.error('[SettingsAPI] Failed to list models:', error);
+        throw new Error(error);
       }
       return response.data;
     },

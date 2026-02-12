@@ -24,6 +24,7 @@ interface OllamaSettingsProps {
 }
 
 export function OllamaSettings({ readonly }: OllamaSettingsProps) {
+  console.log('[OllamaSettings] Component rendered');
   const {
     settings,
     models,
@@ -37,6 +38,16 @@ export function OllamaSettings({ readonly }: OllamaSettingsProps) {
     saveSettings,
   } = useSettings();
 
+  console.log('[OllamaSettings] State:', {
+    hasSettings: !!settings,
+    modelsCount: models.length,
+    isLoading,
+    isLoadingModels,
+    error,
+    modelsError,
+  });
+  console.log('[OllamaSettings] Models array:', models);
+  console.log('[OllamaSettings] Settings object:', settings);
   const [ollamaUrl, setOllamaUrl] = useState('');
   const [chatModel, setChatModel] = useState('');
   const [embeddingModel, setEmbeddingModel] = useState('');
@@ -46,6 +57,7 @@ export function OllamaSettings({ readonly }: OllamaSettingsProps) {
 
   // Sincroniza form com settings carregadas do server
   useEffect(() => {
+    console.log('[OllamaSettings] Settings changed:', settings);
     if (settings) {
       setOllamaUrl(settings.ollama_base_url);
       setChatModel(settings.ollama_chat_model);
@@ -56,6 +68,10 @@ export function OllamaSettings({ readonly }: OllamaSettingsProps) {
   // Carrega modelos quando settings estiver disponível
   useEffect(() => {
     if (settings) {
+      console.log(
+        '[OllamaSettings] Settings loaded, fetching models...',
+        settings,
+      );
       fetchModels();
     }
   }, [settings, fetchModels]);
@@ -258,10 +274,26 @@ export function OllamaSettings({ readonly }: OllamaSettingsProps) {
 
         {/* Erros e Ações */}
         {modelsError && (
-          <p className="flex items-center gap-1 text-xs text-destructive">
-            <AlertCircle className="h-3 w-3" />
-            {modelsError}
-          </p>
+          <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
+            <p className="flex items-center gap-2 text-sm text-yellow-800">
+              <AlertCircle className="h-4 w-4" />
+              <span className="font-medium">
+                Não foi possível conectar ao Ollama
+              </span>
+            </p>
+            <p className="mt-1 text-xs text-yellow-700">
+              Verifique se o Ollama está instalado e rodando. Para instalar,
+              visite{' '}
+              <a
+                href="https://ollama.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                ollama.ai
+              </a>
+            </p>
+          </div>
         )}
 
         {!readonly && (

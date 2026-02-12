@@ -51,8 +51,8 @@ export const defaultConfig: EnvConfig = {
   STORAGE_PATH: getDataPath('../../packages/storage'),
   SKILLS_PATH:
     process.env.SKILLS_PATH ||
-    (isSidecarMode && process.env.OPENPROFIA_DATA_DIR
-      ? `${process.env.OPENPROFIA_DATA_DIR}/skills`
+    (isSidecarMode
+      ? './skills' // Em sidecar, skills estão bundled junto com o server.js
       : '../../packages/skills'),
   WORKER_POLL_INTERVAL_MS: parseInt(
     process.env.WORKER_POLL_INTERVAL_MS || '5000',

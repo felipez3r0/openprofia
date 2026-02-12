@@ -29,6 +29,8 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
   // Gerencia sidecar lifecycle automaticamente baseado no modo
   const { sidecarStatus, isTauri } = useSidecar();
 
+  // APIs são criados apenas quando baseUrl muda, não quando sidecarStatus muda
+  // para evitar recriação desnecessária e loops de dependência
   const apis = useMemo(() => {
     const client = new ApiClient(baseUrl);
     return {
@@ -38,12 +40,22 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
       documentsApi: createDocumentsApi(client),
       healthApi: createHealthApi(client),
       settingsApi: createSettingsApi(client),
+    };
+  }, [baseUrl]);
+
+  // Combina APIs com status do sidecar sem causar recriação das APIs
+  const contextValue = useMemo(
+    () => ({
+      ...apis,
       sidecarStatus,
       isTauri,
-    };
-  }, [baseUrl, sidecarStatus, isTauri]);
+    }),
+    [apis, sidecarStatus, isTauri],
+  );
 
-  return <ApiContext.Provider value={apis}>{children}</ApiContext.Provider>;
+  return (
+    <ApiContext.Provider value={contextValue}>{children}</ApiContext.Provider>
+  );
 }
 
 export function useApi(): ApiContextValue {

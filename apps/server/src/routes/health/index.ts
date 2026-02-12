@@ -52,7 +52,9 @@ const healthRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (_request, _reply) => {
+      fastify.log.debug('Health check detailed called');
       const ollamaHealthy = await ollamaService.healthCheck();
+      fastify.log.debug({ ollamaHealthy }, 'Ollama health check result');
 
       return {
         status: ollamaHealthy ? 'ok' : 'degraded',

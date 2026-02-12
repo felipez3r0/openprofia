@@ -14,10 +14,22 @@ interface ConnectionState {
   setSidecarStatus: (status: SidecarStatus) => void;
 }
 
+/**
+ * Detecta o modo inicial baseado no ambiente
+ * - Se não está no Tauri: usa 'local' (assume servidor rodando externamente)
+ * - Se está no Tauri: usa 'embedded' (sidecar gerenciado pelo app)
+ */
+function getInitialMode(): ConnectionMode {
+  const isTauri =
+    typeof window !== 'undefined' &&
+    typeof window.__TAURI_INTERNALS__ !== 'undefined';
+  return isTauri ? 'embedded' : 'local';
+}
+
 export const useConnectionStore = create<ConnectionState>()(
   persist(
-    (set) => ({
-      mode: 'embedded',
+    (set, get) => ({
+      mode: getInitialMode(),
       baseUrl: DEFAULT_LOCAL_URL,
       sidecarStatus: 'stopped',
 
@@ -34,21 +46,53 @@ export const useConnectionStore = create<ConnectionState>()(
     }),
     {
       name: 'openprofia-connection',
-      version: 1,
+      version: 3, // Incrementado para forçar ajuste de modo
+      partialize: (state) => ({
+        mode: state.mode,
+        baseUrl: state.baseUrl,
+        // NÃO persiste sidecarStatus - sempre inicia como 'stopped'
+      }),
       migrate: (persistedState: any, version: number) => {
-        // Migração da v0 (sem embedded) para v1 (com embedded)
-        if (version === 0) {
-          const oldState = persistedState as {
-            mode: 'local' | 'remote';
-            baseUrl: string;
-          };
-          return {
-            ...oldState,
-            mode: oldState.mode === 'local' ? 'embedded' : oldState.mode,
+        console.log(
+          '[ConnectionStore] Migrating from version',
+          version,
+          persistedState,
+        );
+
+        // Detecta se está no Tauri
+        const isTauri =
+          typeof window !== 'undefined' &&
+          typeof window.__TAURI_INTERNALS__ !== 'undefined';
+
+        // Para versões antigas, começa com modo correto
+        if (version < 3) {
+          const currentMode = persistedState?.mode ?? 'local';
+
+          // Se o modo salvo é 'embedded' mas não está no Tauri, muda para 'local'
+          const adjustedMode =
+            currentMode === 'embedded' && !isTauri ? 'local' : currentMode;
+
+          const migratedState = {
+            mode: adjustedMode,
+            baseUrl: persistedState?.baseUrl ?? DEFAULT_LOCAL_URL,
             sidecarStatus: 'stopped' as SidecarStatus,
           };
+          console.log('[ConnectionStore] Migrated to v3:', migratedState);
+          return migratedState;
         }
-        return persistedState as ConnectionState;
+
+        // Para v3+, sempre valida o modo baseado no ambiente atual
+        const currentMode = (persistedState as ConnectionState).mode;
+        const adjustedMode =
+          currentMode === 'embedded' && !isTauri ? 'local' : currentMode;
+
+        const migratedState = {
+          ...(persistedState as ConnectionState),
+          mode: adjustedMode,
+          sidecarStatus: 'stopped' as SidecarStatus,
+        };
+        console.log('[ConnectionStore] Validated state:', migratedState);
+        return migratedState;
       },
     },
   ),
