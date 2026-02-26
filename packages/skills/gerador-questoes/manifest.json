@@ -7,7 +7,7 @@
   "capabilities": ["assessment", "multiple-choice", "quiz"],
   "tools": [],
   "modelPreferences": {
-    "chat": "gemma2:2b",
+    "chat": "gemma3:4b",
     "embedding": "nomic-embed-text"
   }
 }
